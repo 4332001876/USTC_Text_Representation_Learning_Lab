@@ -5,6 +5,9 @@
 \usepackage{listings}
 \usepackage{color}
 
+\usepackage{multirow}
+\usepackage{booktabs}
+
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
 \definecolor{mauve}{rgb}{0.58,0,0.82}
@@ -65,9 +68,9 @@
 \renewcommand{\headrulewidth}{0pt} % 去页眉线
 
 \begin{center}
-    \textbf{\LARGE{文本表征学习HW1}}\\
-    \vspace{0.1cm}
-    \large{罗浩铭\ PB21030838}
+  \textbf{\LARGE{文本表征学习HW1}}\\
+  \vspace{0.1cm}
+  \large{罗浩铭\ PB21030838}
 \end{center}
 
 
@@ -80,8 +83,38 @@
 % ·简要描述实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
 
 
-\section{代码实现}
-\subsection{VFL-LR算法实现}
+\section{模型实现}
+\subsection{N-gram模型实现}
+本次实验数据集中提供的句子均已完成分词，因此我们可以直接根据分词结果来构建N-gram模型。
+我们读入每一行句子，并使用nltk.util.ngrams来生成每个句子中含有的n-gram序列（左右各填充"<bos>"与"<eos>"），将其合并为一个列表。
+然后使用Python的collections.Counter类来统计每种n-gram出现的次数，作为频率。
+
+
+\subsection{平滑方法实现}
+
+\section{实验结果}
+\subsection{bigram与trigram模型性能对比}
+\begin{table}[htbp]
+  \renewcommand{\multirowsetup}{\centering}
+  \caption{bigram与trigram模型在不同平滑方法下得到的Perplexity中位数}
+  \label{tab:hyperparams}
+  \vspace{5pt}
+  \centering
+  \begin{tabular}{cccc}
+    \toprule
+    \multicolumn{2}{c}{组别} & Bigram模型      & Trigram模型                               \\
+    \midrule
+    \multirow{3}{*}{测试集1} & 不使用平滑      & inf                 & inf                 \\
+                             & 加一平滑        & $8.015 \times 10^3$ & $3.028 \times 10^4$ \\
+                             & Good-Turing平滑 & $3.426 \times 10^2$ & $5.448 \times 10^1$ \\
+    \midrule
+    \multirow{3}{*}{测试集2} & 不使用平滑      & $7.230 \times 10^1$ & inf                 \\
+                             & 加一平滑        & $2.056\times 10^3$  & $1.029 \times 10^4$ \\
+                             & Good-Turing平滑 & $7.849 \times 10^1$ & $5.752 \times 10^1$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 
 \end{document}
 
