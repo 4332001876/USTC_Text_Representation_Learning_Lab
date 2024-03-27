@@ -5,6 +5,8 @@
 \usepackage{listings}
 \usepackage{color}
 
+\usepackage{subfig}
+
 \usepackage{multirow}
 \usepackage{booktabs}
 
@@ -115,7 +117,7 @@ Good-Turing平滑则通过对每个n元组的出现次数赋予一个新值$c^*$
 
 
 \section{实验结果}
-\subsection{bigram与trigram模型性能对比}
+由于均值易受部分句子混乱度较极端影响，因此我们选择使用中位数作为性能指标。
 \begin{table}[htbp]
   \renewcommand{\multirowsetup}{\centering}
   \caption{bigram与trigram模型在不同平滑方法下得到的Perplexity中位数}
@@ -137,6 +139,60 @@ Good-Turing平滑则通过对每个n元组的出现次数赋予一个新值$c^*$
   \end{tabular}
 \end{table}
 
+各组别下模型输出的Perplexity的对数的分布图如下：
+% 下面是组图，横排3张
+\begin{figure}[htbp]    % 常规操作\begin{figure}开头说明插入图片
+  % 后面跟着的[htbp]是图片在文档中放置的位置，也称为浮动体的位置，关于这个我们后面的文章会聊聊，现在不管，照写就是了
+  \centering            % 前面说过，图片放置在中间
+  \subfloat[][无平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_1_prob.png}    % 插入图片，[]中设置图片大小，{}中是图片文件名
+  }
+  \subfloat[][加一平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_1_add_delta_prob.png}
+  }
+  \subfloat[][Good-Turing平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_1_good_turing_prob.png}
+  }
+  \caption{测试集一中，不同平滑方法的Perplexity的对数分布图}    % 图的标题
+  \label{fig:figs}    % 给图片一个标签，这样方便引用
+\end{figure}
+
+\begin{figure}[htbp]    % 常规操作\begin{figure}开头说明插入图片
+  % 后面跟着的[htbp]是图片在文档中放置的位置，也称为浮动体的位置，关于这个我们后面的文章会聊聊，现在不管，照写就是了
+  \centering            % 前面说过，图片放置在中间
+  \subfloat[][无平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_2_prob.png}    % 插入图片，[]中设置图片大小，{}中是图片文件名
+  }
+  \subfloat[][加一平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_2_add_delta_prob.png}
+  }
+  \subfloat[][Good-Turing平滑]
+  {
+    \includegraphics[width=0.3\textwidth]{./pic/perplexity_2_good_turing_prob.png}
+  }
+  \caption{测试集二中，不同平滑方法的Perplexity的对数分布图}    % 图的标题
+  \label{fig:figs}    % 给图片一个标签，这样方便引用
+\end{figure}
+
+
+对比bigram模型与trigram模型的性能，我们可以看出：
+\begin{itemize}
+  \item 由于未使用平滑时，只有bigram模型在测试集2上取得了有效的结果（因其只有一个单词的上文，且测试集2不包含新词）。
+  \item 在两个测试集上，当使用加一平滑时，bigram模型的性能要优于trigram模型，这可能是因为bigram参数空间小，训练得到的概率分布不那么平滑，不容易被加一平滑过度稀释。
+  \item 在两个测试集上，当使用Good-Turing平滑时，trigram模型的性能要优于bigram模型，此时模型的表现符合预期。
+  \item 此外，trigram模型预测的Perplexity通常更为两极分化。
+\end{itemize}
+
+对比不同平滑策略下的模型性能，可以发现：
+\begin{itemize}
+  \item 不使用平滑的情况下，由于部分n-gram未在训练集中出现，导致了Perplexity无穷大，则难以得到有效结果。
+  \item 在各组别下，Good-Turing平滑的性能要远远优于加一平滑，这可能是因为加一平滑过度稀释了下一词预测的概率分布。
+\end{itemize}
 
 \end{document}
 
