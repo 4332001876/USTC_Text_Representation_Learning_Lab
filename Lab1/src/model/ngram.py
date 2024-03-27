@@ -3,6 +3,7 @@ from collections import Counter
 import random
 import numpy as np
 from config import Config
+import statsmodels.api as sm
 
 """class NgramModelFreq:
     def __init__(self, n, ngram_dataset: NgramDataset):
@@ -83,13 +84,13 @@ from config import Config
 class NgramModelCond:
     def __init__(self, n, ngram_dataset: NgramDataset):
         assert n > 1
-        self.vocab = self.ngram_dataset.vocab
         self.n = n
         self.ngram_dataset = ngram_dataset
+        self.vocab = self.ngram_dataset.vocab
         self.ngram_dataset.set_n(n)
         self.ngram_next_word_freq, self.ngram_freq, self.n_1_gram_freq = self.build_ngram()
-        self.n_1_good_turing_times_func = self.gen_good_turing_prob(self.n_1_gram_freq)
-        self.n_good_turing_times_func = self.gen_good_turing_prob(self.ngram_freq)
+        self.n_1_good_turing_times_func = self.gen_good_turing_prob(self.n_1_gram_freq, n-1)
+        self.n_good_turing_times_func = self.gen_good_turing_prob(self.ngram_freq, n)
 
     def build_ngram(self):
         ngram_freq = []
@@ -149,9 +150,17 @@ class NgramModelCond:
         counter = self.ngram_next_word_freq[ngram[:-1]]
         return (counter[ngram[-1]] + delta) / (self.n_1_gram_freq[ngram[:-1]] + delta*len(self.vocab))
     
-    def gen_good_turing_prob(self, ngram_freq):
+    def gen_good_turing_prob(self, ngram_freq, n_order):
         times_freq = Counter(ngram_freq.values())
-        linear_fit = np.polyfit(np.log(list(times_freq.keys())), np.log(list(times_freq.values())), 1)
+        X = np.log(list(times_freq.keys()))
+        Y = np.log(list(times_freq.values()))
+        linear_fit = np.polyfit(X, Y, 1)
+
+        model = sm.OLS(Y,X)
+        results = model.fit()
+        print(n_order, "order Good-Turing Linear Fit:")
+        print(results.summary())
+
         N_c_func = lambda c: np.exp(linear_fit[1] + linear_fit[0] * np.log(c))
         n1 = N_c_func(1)
         n = sum(ngram_freq.values())
@@ -182,3 +191,7 @@ class NgramModelCond:
             data_perplexity = np.exp(-1 * np.mean(log_probs))
             perplexity_set.append(data_perplexity)
         return perplexity_set
+
+class NGramModelTester:
+    def __init__(self) -> None:
+        pass
