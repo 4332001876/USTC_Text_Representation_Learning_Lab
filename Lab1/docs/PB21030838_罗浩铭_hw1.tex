@@ -1,0 +1,87 @@
+\documentclass[twoside,11pt]{article}
+%\documentclass[UTF8]{ctexart}
+\usepackage[heading=true]{ctex}
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\usepackage{fancyhdr} % 页眉页脚
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+%\usepackage[margin=1.5in]{geometry}
+
+\oddsidemargin .25in    %   Note \oddsidemargin = \evensidemargin
+\evensidemargin .25in
+\marginparwidth 0.07 true in
+%\marginparwidth 0.75 true in
+%\topmargin 0 true pt           % Nominal distance from top of page to top of
+%\topmargin 0.125in
+\topmargin -0.1in
+\addtolength{\headsep}{0.25in}
+\textheight 8.5 true in       % Height of text (including footnotes & figures)
+\textwidth 6.0 true in        % Width of text line.
+\widowpenalty=10000
+\clubpenalty=10000
+
+
+\pagestyle{fancy}
+
+%\firstpageno{1}
+
+\title{文本表征学习HW1}
+
+\author{罗浩铭\ PB21030838}
+
+
+\begin{document}
+
+\fancyhf{} % 清除所有页眉页脚
+\fancyfoot[C]{\thepage} % 设置右页脚为页码
+\fancyhead[l]{\footnotesize USTC Text Representation Learning} % 设置左页眉为课程名称
+% 设置右页眉为章节标题 
+
+\renewcommand{\headrulewidth}{0pt} % 去页眉线
+
+\begin{center}
+    \textbf{\LARGE{文本表征学习HW1}}\\
+    \vspace{0.1cm}
+    \large{罗浩铭\ PB21030838}
+\end{center}
+
+
+% 实验报告要求：使用训练数据构建统计语言模型并使用不同平滑方法优化模型，对比分析不同模型及平滑策略在不同测试集上的性能（perplexity），完成并提交1-2页的实验报告
+
+
+% ·bigram语言模型与trigram语言模型的比较分析
+% ·通过语言模型在不使用平滑、使用加一平滑、使用古德-图灵平滑时在不同数据集上性能的比较，讨论比较不同平滑策略的优劣
+% ·上述讨论与分析依据的具体模型参数和性能数值
+% ·简要描述实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
+
+
+\section{代码实现}
+\subsection{VFL-LR算法实现}
+
+\end{document}
+
