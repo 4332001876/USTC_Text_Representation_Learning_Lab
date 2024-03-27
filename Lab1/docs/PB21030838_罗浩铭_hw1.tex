@@ -89,8 +89,30 @@
 我们读入每一行句子，并使用nltk.util.ngrams来生成每个句子中含有的n-gram序列（左右各填充"<bos>"与"<eos>"），将其合并为一个列表。
 然后使用Python的collections.Counter类来统计每种n-gram出现的次数，作为频率。
 
+则由此可以得到n-gram模型的概率估计，式中C即为上述频率：
+\begin{equation}
+  P(w_n|w_{n-1},w_{n-2},\cdots,w_1) = \frac{C(w_n,w_{n-1},w_{n-2},\cdots,w_1)}{C(w_{n-1},w_{n-2},\cdots,w_1)}
+\end{equation}
 
 \subsection{平滑方法实现}
+本次实验中我们实现了两种平滑方法：加一平滑与Good-Turing平滑。
+加一平滑的概率估计如下，式中V为单词表大小：
+\begin{equation}
+  P_{add1}(w_n|w_{n-1},w_{n-2},\cdots,w_1) = \frac{C(w_n,w_{n-1},w_{n-2},\cdots,w_1)+1}{C(w_{n-1},w_{n-2},\cdots,w_1)+V}
+\end{equation}
+
+Good-Turing平滑则通过对每个n元组的出现次数赋予一个新值$c^*$，将出现次数为c的n-gram频率映射到出现次数为c+1的n-gram的频率上，从而避免了出现次数为0的n-gram。
+其中$c^*$由以下公式得到：
+\begin{equation}
+  c^* = \frac{(c+1)N(c+1)}{N(c)}
+\end{equation}
+而由于在实际应用中，$N(c+1)$可能为0，因此我们需要又对$N(c+1)$进行平滑处理，来避免出现除0错误。
+这里我们使用了常见的Good-Turing平滑的实现方法，即对于出现次数为$c$的n元组个数$N_c$，采用线性拟合的方式得到：
+\begin{equation}
+  \log N_c = a + b \log c
+\end{equation}
+将拟合结果代入$c^*$的计算公式中，即可得到平滑后的频率。而对于出现次数为0的n元组，我们直接将其出现次数设为$N_1/N$。
+
 
 \section{实验结果}
 \subsection{bigram与trigram模型性能对比}

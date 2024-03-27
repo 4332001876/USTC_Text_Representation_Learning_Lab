@@ -40,7 +40,7 @@ def vis_all_perplexity(results_perplexity):
                 if prob_func == "prob" and (n_order != 2 or idx != 1):
                     continue
                 else:
-                    sns.histplot(data=perplexity, bins=20, color=colors[n_order], kde=True, label=f"n={n_order}", stat="density",pthresh=0.1)
+                    sns.histplot(data=perplexity, bins=20, color=colors[n_order], kde=True, label=f"n={n_order}", stat="density",thresh=100)
             plt.legend(['n=2', 'n=3'])
             plt.xlabel('Perplexity (%s)'%title_desc[prob_func])
             plt.ylabel('Probability Density')
