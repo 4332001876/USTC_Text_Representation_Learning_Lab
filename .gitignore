@@ -1,0 +1,9 @@
+# docs-compiled
+*.pdf
+
+# Byte-compiled / optimized / DLL files
+*.pyc
+
+# tmp files
+Lab*/tmp
+
