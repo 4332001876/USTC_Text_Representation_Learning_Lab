@@ -46,6 +46,7 @@ def vis_all_perplexity(results_perplexity):
             plt.ylabel('Probability Density')
             plt.title('Perplexity Distribution')
             plt.savefig(f"tmp/result/perplexity_{idx+1}_{prob_func}.png")
+            plt.clf()
 
 
 

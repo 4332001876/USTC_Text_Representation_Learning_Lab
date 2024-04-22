@@ -8,3 +8,8 @@
 Lab*/src/tmp
 Lab*/src/data
 
+# Subversion files
+*.svn-base
+Lab2/src/word2vec_google/.svn/*
+Lab2/src/word2vec_google/trunk/.svn/*
+
