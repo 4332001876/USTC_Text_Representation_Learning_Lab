@@ -93,7 +93,7 @@
 \section{项目实现}
 
 % 简要描述处理数据和实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
-本项目主要基于\href{https://code.google.com/archive/p/word2vec/source/default/source}{谷歌的word2vec实现}来完成。
+本项目主要基于谷歌的word2vec实现\url{https://code.google.com/archive/p/word2vec/source/default/source}来完成。
 
 \subsection{数据处理}
 
@@ -109,6 +109,13 @@
 
 
 \section{训练参数设置}
+我们根据实验要求，设置参数为：词向量维度200，窗口大小5个词，词频过滤的阈值为5。
+
+对于其它参数，我们进行如下设置：
+采样阈值1e-4（使得词频高于该阈值的词语会被随机下采样），Negative Sampling数为25，学习率使用默认值（CBOW:0.05，SG:0.025），迭代轮数为15。
+
+
+
 
 
 \section{实验结果与分析}
