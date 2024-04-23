@@ -3,6 +3,7 @@
 
 # Byte-compiled / optimized / DLL files
 *.pyc
+*.bin
 
 # tmp files
 Lab*/src/tmp
@@ -13,3 +14,9 @@ Lab*/src/data
 Lab2/src/word2vec_google/.svn/*
 Lab2/src/word2vec_google/trunk/.svn/*
 
+# Word2Vec Compiled
+Lab2/src/word2vec_google/trunk/compute-accuracy
+Lab2/src/word2vec_google/trunk/distance
+Lab2/src/word2vec_google/trunk/word-analogy
+Lab2/src/word2vec_google/trunk/word2phrase
+Lab2/src/word2vec_google/trunk/word2vec
