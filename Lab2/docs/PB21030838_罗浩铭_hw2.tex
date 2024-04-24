@@ -83,11 +83,9 @@
 
 
 \begin{abstract}
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
-  both the left- and right-hand margins. Use 10~point type, with a vertical
-  spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
-  bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph.
+  本次实验完成了Word2Vec算法的训练全过程，包括数据处理、训练参数设置、性能评估，并对比分析了不同训练方法的性能。
+  我们发现，四种训练方法的性能从高到低排序为：SG+HS > CBOW+NS > SG+NS > CBOW+HS。同时我们发现，SG相较于CBOW训练时长更长，NS相较于HS训练时长更长。
+  本次实验中对Word2Vec的探索有助于我们更好地理解自然语言的向量表示，为此后学习深度学习在NLP领域的应用提供更好的基础。
 \end{abstract}
 
 \section{项目实现}
@@ -112,7 +110,7 @@
 然后对于测试集中的每对词语，我们使用余弦相似度来计算它们的相似度，并求其与label相似度的Spearman相关系数，作为实验结果。
 
 
-\section{训练参数设置}
+\subsection{训练参数设置}
 我们根据实验要求，设置参数为：词向量维度200，窗口大小5个词，词频过滤的阈值为5。
 
 对于其它参数，我们进行如下设置：
