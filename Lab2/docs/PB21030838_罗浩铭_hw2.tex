@@ -106,6 +106,10 @@
 
 
 \subsection{模型实现}
+我们的模型实现几乎全部基于谷歌的Word2Vec实现，仅仅编写了一些shell脚本来调用Word2Vec程序完成数据预处理、模型训练等任务。
+
+模型评估部分我们编写了一个Python脚本来完成。我们首先先将Word2Vec训练得到的词向量读入程序，保存为一个从词语（改为全小写形式）到NumPy向量的字典映射。
+然后对于测试集中的每对词语，我们使用余弦相似度来计算它们的相似度，并求其与label相似度的Spearman相关系数，作为实验结果。
 
 
 \section{训练参数设置}
@@ -116,15 +120,54 @@
 
 
 
-
-
 \section{实验结果与分析}
-
-\subsection{实验结果}
 % 四种方法训练得到的词向量的性能结果
 
-\subsection{结果分析}
 % 结合你对四种方法结果的观察，比较分析HS与NS，以及CBOW和SG
+
+我们使用不同训练方法训得词向量，此后对于测试集中的每对词语（由于tableware不在词汇表中，我们略去了它所在的那对词语），
+我们使用余弦相似度来计算它们的相似度，并求其与label中相似度的Spearman相关系数，作为实验结果。
+
+得到的实验结果如表格\ref{tab:results}所示：
+\begin{table}[htbp]
+  \caption{Word2Vec模型在不同训练方法下得到的词向量性能}
+  \label{tab:results}
+  \vspace{5pt}
+  \centering
+  \begin{tabular}{cccc}
+    \toprule
+    Spearman相关系数（越高越好） & CBOW    & Skip-Gram \\
+    \midrule
+    Hierarchical Softmax         & $0.670$ & $0.721$   \\
+    \midrule
+    Negative Sampling            & $0.707$ & $0.672$   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+从表格\ref{tab:results}中我们可以按性能从高到低对四种方法排序得到：SG+HS > CBOW+NS > SG+NS > CBOW+HS。
+
+Skip-Gram相较于CBOW在理论上性能更好，因为其训练组数更多，而Skip-Gram相较于CBOW在NS训练下性能更差可能是因为Negative Sampling时正负样本的比例差异导致。
+
+
+在2核CPU的服务器上，Word2Vec模型迭代15轮次所需的训练时间如表格\ref{tab:time}所示：
+\begin{table}[htbp]
+  \caption{2核CPU的服务器上，Word2Vec模型在不同训练方法下迭代15轮次所需的训练时间}
+  \label{tab:time}
+  \vspace{5pt}
+  \centering
+  \begin{tabular}{cccc}
+    \toprule
+    训练用时             & CBOW   & Skip-Gram \\
+    \midrule
+    Hierarchical Softmax & 13m48s & 37m21s    \\
+    \midrule
+    Negative Sampling    & 26m26s & 131m33s   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+从表格\ref{tab:time}中我们可以看出，Skip-Gram相较于CBOW训练时长更长，Negative Sampling相较于Hierarchical Softmax训练时长更长。
 
 \end{document}
 
