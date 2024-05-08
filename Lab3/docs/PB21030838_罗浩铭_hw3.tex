@@ -1,0 +1,111 @@
+\documentclass{article}
+%\documentclass[UTF8]{ctexart}
+\usepackage{ctex}
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2024
+
+
+% ready for submission
+\usepackage[preprint]{neurips_2024}
+
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+%     \usepackage[preprint]{neurips_2024}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{neurips_2024}
+
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2024}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+
+
+\title{文本表征学习HW3: Doc2Vec}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+
+\author{
+  罗浩铭 \\
+  PB21030838\\
+  中国科学技术大学\ 安徽合肥 230026 \\
+  \texttt{mzfslhm@mail.ustc.edu.cn} \\
+  % examples of more authors
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
+
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+  本次实验完成了Doc2Vec算法的训练全过程，包括数据处理、训练参数设置、性能评估，并对比分析了不同训练方法的性能。
+  我们发现，四种训练方法的性能从高到低排序为：。
+  本次实验中对Doc2Vec的探索有助于我们更好地理解自然语言的向量表示，为此后学习深度学习在NLP领域的应用提供更好的基础。
+\end{abstract}
+
+% 实验报告应包含：
+% - 四种方法训练得到的doc2vec向量在IMDB测试集上性能（准确率）结果
+% - 结合你对四种方法结果的观察，比较分析HS与NS，以及PV-DM和PV-DBOW
+% - 简要描述处理数据和实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
+
+\section{项目实现}
+\subsection{数据处理}
+
+
+\subsection{模型实现}
+
+
+\subsection{训练参数设置}
+
+\section{实验结果与分析}
+% 四种方法训练得到的doc向量的性能结果
+
+我们使用不同训练方法训得doc2vec向量，此后基于训得的doc2vec模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+
+\end{document}
+

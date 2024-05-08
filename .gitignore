@@ -9,6 +9,9 @@
 Lab*/src/tmp
 Lab*/src/data
 
+# model weights
+Lab*/src/models
+
 # Subversion files
 *.svn-base
 Lab2/src/word2vec_google/.svn/*
