@@ -34,6 +34,30 @@
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
 
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
 
 \title{文本表征学习HW3: Doc2Vec}
 
@@ -83,9 +107,9 @@
 
 
 \begin{abstract}
-  本次实验完成了Doc2Vec算法的训练全过程，包括数据处理、训练参数设置、性能评估，并对比分析了不同训练方法的性能。
-  我们发现，四种训练方法的性能从高到低排序为：。
-  本次实验中对Doc2Vec的探索有助于我们更好地理解自然语言的向量表示，为此后学习深度学习在NLP领域的应用提供更好的基础。
+  本次实验完成了Doc2Vec算法的训练全过程，包括数据处理、模型训练、性能评估，并对比分析了不同训练方法的性能。
+  实验结果显示，PV-DBOW的训练方法明显比PV-DM的训练方法性能更好，Negative Sampling与Hierarchical Softmax性能相当。
+  本次实验中对Doc2Vec的探索有助于我们更好地理解自然语言的向量表示，为此后探索深度学习在NLP领域的应用提供更好的基础。
 \end{abstract}
 
 % 实验报告应包含：
@@ -95,17 +119,106 @@
 
 \section{项目实现}
 \subsection{数据处理}
+本次实验中IMDB数据集的影评文本作为输入时同样需要进行清洗、分词等预处理。
+
+由于本次的影评文本中较少出现结构符，因此我们所做的数据处理工作主要包括：
+\begin{itemize}
+  \item 将所有大写字母全部转为小写字母
+  \item 将换行符\verb|<br />|替换为空格
+  \item 在所有标点符号左右添加空格
+  \item 按空格分词
+\end{itemize}
+
+最终我们得到了分词后的影评文本，用于后续的Doc2Vec模型训练。
 
 
 \subsection{模型实现}
+我们使用了gensim库来训练Doc2Vec模型。
 
+gensim库中的Doc2Vec模型要求输入的文档是一个TaggedDocument对象的迭代器，其中每个TaggedDocument对象包含一个文档的分词列表和一个标签。
+我们只需把按上述方法分词后的影评文本作为输入，将每个影评文本的标签设为其在数据集中的索引即可。
+
+我们接着使用gensim库中的Doc2Vec类来训练Doc2Vec模型，然后用训练好的模型生成文本的向量表示，
+并使用这些向量表示及情感分类标签来训练文本情感分类的逻辑回归模型。
+逻辑回归使用了LightGBM来完成，具体使用了lightgbm库的LGBMClassifier类来实现。
 
 \subsection{训练参数设置}
+我们根据实验要求，设置了如下参数：词向量维度200，窗口大小5个词，词频过滤的阈值为5。
+
+同时，我们还设置了如下参数：
+\begin{itemize}
+  \item \verb|dm_concat|为0，\verb|dm_mean|为1，也即综合多个词的向量时，不使用拼接，也不使用求和，而是使用平均
+  \item Negative Sampling数为5
+  \item 学习率为0.025
+  \item epoch数为20
+\end{itemize}
+
+其余参数为gensim库中Doc2Vec类的默认参数。
+
+另外，我们按照我们此前参加Kaggle比赛"Titanic - Machine Learning from Disaster"的经验设置了LightGBM的参数，详见附录。
+
+
 
 \section{实验结果与分析}
 % 四种方法训练得到的doc向量的性能结果
+% 结合你对四种方法结果的观察，比较分析HS与NS，以及PV-DM和PV-DBOW
 
 我们使用不同训练方法训得doc2vec向量，此后基于训得的doc2vec模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+
+得到的实验结果如表格\ref{tab:results}所示：
+\begin{table}[htbp]
+  \caption{Doc2Vec模型在不同训练方法下得到的Doc向量性能}
+  \label{tab:results}
+  \vspace{5pt}
+  \centering
+  \begin{tabular}{cccc}
+    \toprule
+    逻辑回归准确率       & PV-DM   & PV-DBOW \\
+    \midrule
+    Hierarchical Softmax & $0.830$ & $0.853$ \\
+    \midrule
+    Negative Sampling    & $0.822$ & $0.861$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+从表格\ref{tab:results}中我们可以看出：PV-DBOW的训练方法明显比PV-DM的训练方法性能更好，Negative Sampling与Hierarchical Softmax性能相当。
+
+
+
+\appendix
+
+\section{附：LightGBM参数设置}
+\begin{lstlisting}
+  lgb_params = { 
+    'verbose': -1, 
+    'subsample_freq': 1, 
+    'subsample': 0.95, 
+    'skip_drop': 0.1, 
+    'n_estimators': 2000, 
+    'min_data_in_leaf': 10,
+    'min_sum_hessian_in_leaf': 1, 
+    'min_child_weight': 0.001,
+    'min_gain_to_split': 0.2, 
+    'max_drop': 30, 
+    'max_depth': 5, 
+    'max_bin': 32, 
+    'learning_rate': 0.05, 
+    'drop_seed': 123, 
+    'drop_rate': 0.05, 
+    'colsample_bytree': 0.8, 
+    'reg_alpha': 0.06,
+    'reg_lambda': 0.06,
+    'objective': 'binary',
+    'n_jobs': 8
+}
+\end{lstlisting}
+
+
+% 转为Python代码格式
+
+
+
 
 \end{document}
 

@@ -8,7 +8,7 @@ from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 from config import Config
 
-REGRESSION_METHOD = 'lgbm'  # 'lgbm' or 'logistic'
+REGRESSION_METHOD = 'logistic'  # 'lgbm' or 'logistic'
 
 lgb_params = { 
     'verbose': -1, 
@@ -36,6 +36,7 @@ lgb_params = {
 # 文档分词
 def tokenizing(doc):
     norm_doc = doc.lower()
+
     # Replace breaks with spaces
     norm_doc = norm_doc.replace('<br />', ' ')
 
@@ -73,7 +74,7 @@ def train_doc2vec():
     for hs in [0, 1]:
         for dm in [0, 1]:
             print("Training model with hs={}, dm={}".format(hs_names[hs], dm_names[dm]))
-            model = Doc2Vec(train_documents, vector_size=200, window=5, min_count=5, workers=8, hs=hs, dm=dm, dm_concat=0, dm_mean=1, epochs=20)
+            model = Doc2Vec(train_documents, vector_size=200, window=5, min_count=5, workers=8, hs=hs, dm=dm, dm_concat=0, dm_mean=0, epochs=20)
             print("Model is ready.")
 
             # Save the model
@@ -96,11 +97,14 @@ def train_doc2vec():
             if REGRESSION_METHOD == 'logistic':
                 clf = sm.Logit(train_labels, X_train).fit()
                 print("Logistic Regression Model is trained.")
-                print(clf.summary())
+                # print(clf.summary())
 
                 # Evaluate the model
-                train_acc = clf.predict(X_train)
-                test_acc = clf.predict(X_test)
+                train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
+                test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
+
+                train_acc = np.mean(train_prediction == train_labels)
+                test_acc = np.mean(test_prediction == test_labels)
 
             elif REGRESSION_METHOD == 'lgbm':
                 clf = lgb.LGBMClassifier(**lgb_params)
@@ -146,11 +150,14 @@ def test_doc2vec():
             if REGRESSION_METHOD == 'logistic':
                 clf = sm.Logit(train_labels, X_train).fit()
                 print("Logistic Regression Model is trained.")
-                print(clf.summary())
+                # print(clf.summary())
 
                 # Evaluate the model
-                train_acc = clf.predict(X_train)
-                test_acc = clf.predict(X_test)
+                train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
+                test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
+
+                train_acc = np.mean(train_prediction == train_labels)
+                test_acc = np.mean(test_prediction == test_labels)
                 
             elif REGRESSION_METHOD == 'lgbm':
                 # clf = lgb.LGBMClassifier(n_estimators=100, num_leaves=31, learning_rate=0.08, min_child_samples=75, n_jobs=8)
@@ -168,5 +175,5 @@ def test_doc2vec():
 
 
 if __name__ == '__main__':
-    # train_doc2vec()
-    test_doc2vec()
+    train_doc2vec()
+    # test_doc2vec()
