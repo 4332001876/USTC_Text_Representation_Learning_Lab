@@ -1,0 +1,131 @@
+\documentclass{article}
+%\documentclass[UTF8]{ctexart}
+\usepackage{ctex}
+
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2024
+
+
+% ready for submission
+\usepackage[preprint]{neurips_2024}
+
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+%     \usepackage[preprint]{neurips_2024}
+
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{neurips_2024}
+
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2024}
+
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+
+\title{文本表征学习HW4: Transformer}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+
+\author{
+  罗浩铭 \\
+  PB21030838\\
+  中国科学技术大学\ 安徽合肥 230026 \\
+  \texttt{mzfslhm@mail.ustc.edu.cn} \\
+  % examples of more authors
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
+
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+  本次实验完成了Doc2Vec算法的训练全过程，包括数据处理、模型训练、性能评估，并对比分析了不同训练方法的性能。
+  实验结果显示，PV-DBOW的训练方法明显比PV-DM的训练方法性能更好，Negative Sampling与Hierarchical Softmax性能相当。
+  本次实验中对Doc2Vec的探索有助于我们更好地理解自然语言的向量表示，为此后探索深度学习在NLP领域的应用提供更好的基础。
+\end{abstract}
+
+% 概述：使用训练数据以及Transformer模型训练句子向量并对其性能进行评价，对比分析不同设定的性能，完成并提交1-2页的实验报告
+
+% 使用IMDB情感分析数据集，使用以下两种配置，训练Transformer模型：
+% - 向量维度设置为100，其他参数自定
+% - 向量维度设置为200，保持与上个模型的参数一致
+% - 针对情感分析任务，比较分析测试集上性能差异
+% - 情感分析任务方法：自定义句向量输出方式，使用逻辑回归分类
+
+
+% 实验报告应包含：
+% - 两种设定得到的Transformer模型在IMDB测试集上性能（准确率）结果
+% - 结合你对两种模型结果的观察，比较分析向量维度与其他因素（如参数设定等）对结果的影响
+% - 简要描述处理数据和实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
+
+
+\end{document}
+

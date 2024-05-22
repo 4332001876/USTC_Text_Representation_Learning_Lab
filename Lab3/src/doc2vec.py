@@ -51,7 +51,8 @@ def load_data():
     # Create a list of documents
     train_set = pd.read_parquet(Config.TRAIN_DATA_PATH)
     test_set = pd.read_parquet(Config.TEST_DATA_PATH)
-    # print(dataset.head())
+    # print(train_set.head())
+    # print(test_set.head())
     # dataset_structure: [text, label]
 
     train_documents = [TaggedDocument(tokenizing(doc), [i]) for i, doc in enumerate(train_set['text'].values)]
