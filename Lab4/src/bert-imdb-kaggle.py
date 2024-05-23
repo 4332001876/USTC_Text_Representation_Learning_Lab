@@ -1,13 +1,16 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
+from tqdm import tqdm
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 在此我指定使用2号GPU，可根据需要调整
+# ban wandb
+os.environ["WANDB_DISABLED"] = "true"
 import torch
 import gc
 from transformers import AutoConfig
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, BertModel, BertForPreTraining
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, BertModel, BertForMaskedLM, AutoModelForCausalLM
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import Trainer, TrainingArguments
 from transformers import pipeline
@@ -21,15 +24,19 @@ class Config:
     # Path to the directory where the model will be saved
     MODEL_DIR = '/kaggle/working/models'
 
+def check_dataset(train_dataset, test_dataset):
+    print(train_dataset)
+    print(train_dataset[0])
+    print(test_dataset)
+    print(test_dataset[0])
+
 def load_data(tokenizer):
-    # Create a list of documents
-    # print(train_set.head())
-    # print(test_set.head())
-    
     data_files = {"train": "train.csv", "test": "test.csv"}
     train_dataset = load_dataset(path=Config.TRAIN_DATA_PATH, split='train', data_files=data_files)
     test_dataset = load_dataset(path=Config.TEST_DATA_PATH, split='test', data_files=data_files)
     # dataset_structure: [text, label]
+
+    # check_dataset(train_dataset, test_dataset)
 
     train_dataset = train_dataset.map(lambda examples: {'labels': examples['label']}, batched=True)
     test_dataset = test_dataset.map(lambda examples: {'labels': examples['label']}, batched=True)
@@ -38,11 +45,15 @@ def load_data(tokenizer):
     train_dataset = train_dataset.map(lambda e: tokenizer(e['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH), batched=True)
     test_dataset = test_dataset.map(lambda e: tokenizer(e['text'], truncation=True, padding='max_length', max_length=MAX_LENGTH), batched=True)
 
+    # check_dataset(train_dataset, test_dataset)
 
     train_dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
     test_dataset.set_format(type='torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
 
+    # check_dataset(train_dataset, test_dataset)
+
     return train_dataset, test_dataset
+
 
 def compute_metrics(pred):
     labels = pred.label_ids
@@ -65,13 +76,15 @@ HIDDEN_SIZE = 100
 model_config.hidden_size = HIDDEN_SIZE
 model_config.intermediate_size = 4 * HIDDEN_SIZE
 
+# model = AutoModelForSequenceClassification.from_config(model_config)
 model = AutoModelForSequenceClassification.from_config(model_config)
+
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 training_args = TrainingArguments(
     output_dir='./results',          # output directory
     learning_rate=3e-4,
-    num_train_epochs=3,              # total number of training epochs
+    num_train_epochs=10,              # total number of training epochs
     per_device_train_batch_size=64,  # batch size per device during training
     per_device_eval_batch_size=64,   # batch size for evaluation
     logging_dir='./logs',            # directory for storing logs
@@ -122,12 +135,13 @@ def get_accuracy_pipeline(classifier, test_dataset, tokenizer):
 
 def get_accuracy(model, train_dataset, test_dataset, device='cuda:0'):
     model=model.to(device)
-    BATCH_SIZE = 32
+    BATCH_SIZE = 2048
     X_train = []
     X_test = []
     
     with torch.no_grad():
-        for i in range(0, len(train_dataset), BATCH_SIZE):
+        # for i in range(0, len(train_dataset), BATCH_SIZE): # to_tqdm
+        for i in tqdm(range(0, len(train_dataset), BATCH_SIZE)):
             train_dataset_outputs = model(
                 train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
                 train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
@@ -149,9 +163,10 @@ def get_accuracy(model, train_dataset, test_dataset, device='cuda:0'):
     X_train = np.concatenate(X_train, axis=0)
     X_test = np.concatenate(X_test, axis=0)
 
-    train_labels = train_dataset['labels']
-    test_labels = test_dataset['labels']
+    train_labels = train_dataset['labels'].numpy()
+    test_labels = test_dataset['labels'].numpy()
 
+    """
     print("Start training the Logistic Regression model.")
     clf = sm.Logit(train_labels, X_train).fit()
     print("Logistic Regression Model is trained.")
@@ -160,10 +175,14 @@ def get_accuracy(model, train_dataset, test_dataset, device='cuda:0'):
     # Evaluate the model
     train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
     test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
-
+`   
     train_acc = np.mean(train_prediction == train_labels)
     test_acc = np.mean(test_prediction == test_labels)
-    
+    """
+
+    train_acc = np.mean(np.argmax(X_train, axis=1) == train_labels)
+    test_acc = np.mean(np.argmax(X_test, axis=1) == test_labels)
+
     print("Train accuracy: ", train_acc)
     print("Test accuracy: ", test_acc)
 
