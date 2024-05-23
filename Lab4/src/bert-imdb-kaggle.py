@@ -11,6 +11,8 @@ import torch
 import gc
 from transformers import AutoConfig
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, BertModel, BertForMaskedLM, AutoModelForCausalLM
+from transformers import LineByLineTextDataset
+from transformers import DataCollatorForLanguageModeling
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import Trainer, TrainingArguments
 from transformers import pipeline
@@ -75,16 +77,196 @@ model_config = AutoConfig.from_pretrained(model_id)
 HIDDEN_SIZE = 100
 model_config.hidden_size = HIDDEN_SIZE
 model_config.intermediate_size = 4 * HIDDEN_SIZE
+model_config.num_attention_heads = 4
+# model_config.num_hidden_layers = 2
 
+# classifier("love")
+def get_accuracy_pipeline(classifier, test_dataset, tokenizer):
+    test_dataset_text = [tensor[:480] for tensor in test_dataset['input_ids']]
+    # token_id to text
+    test_dataset_text = tokenizer.batch_decode(test_dataset_text)
+    predictions = [classifier(test_dataset_text[i]) for i in range(len(test_dataset))]  
+    labels = [x['labels'] for x in test_dataset]
+    preds = [int(label[0]['label'][-1]) for label in predictions]
+    acc = accuracy_score(labels, preds)
+    return acc
+
+def get_accuracy(model, train_dataset, test_dataset, device='cuda:0', is_classifier=True):
+    model=model.to(device)
+    BATCH_SIZE = 1024
+    X_train = []
+    X_test = []
+    
+    with torch.no_grad():
+        # for i in range(0, len(train_dataset), BATCH_SIZE): # to_tqdm
+        for i in tqdm(range(0, len(train_dataset), BATCH_SIZE)):
+            train_dataset_outputs = model(
+                train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                train_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+            )
+            # print(i)
+            # print(train_dataset_outputs)
+            X_train.append(train_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+
+            test_dataset_outputs = model(
+                test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+            )
+            X_test.append(test_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+
+            gc.collect()
+            torch.cuda.empty_cache()
+    X_train = np.concatenate(X_train, axis=0)
+    X_test = np.concatenate(X_test, axis=0)
+
+    train_labels = train_dataset['labels'].numpy()
+    test_labels = test_dataset['labels'].numpy()
+
+    if not is_classifier:
+        print("Start training the Logistic Regression model.")
+        clf = sm.Logit(train_labels, X_train).fit()
+        print("Logistic Regression Model is trained.")
+        # print(clf.summary())
+
+        # Evaluate the model
+        train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
+        test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
+
+        train_acc = np.mean(train_prediction == train_labels)
+        test_acc = np.mean(test_prediction == test_labels)
+    else:
+
+        train_acc = np.mean(np.argmax(X_train, axis=1) == train_labels)
+        test_acc = np.mean(np.argmax(X_test, axis=1) == test_labels)
+
+    print("Train accuracy: ", train_acc)
+    print("Test accuracy: ", test_acc)
+
+    return test_acc
+
+def get_accuracy_mlm(model, train_dataset, test_dataset, device='cuda:0'):
+    model=model.to(device)
+    BATCH_SIZE = 32
+
+    IS_VECTOR_SAVED = False
+    if not IS_VECTOR_SAVED:
+        X_train = []
+        X_test = []
+        
+        with torch.no_grad():
+            # for i in range(0, len(train_dataset), BATCH_SIZE): # to_tqdm
+            for i in tqdm(range(0, len(train_dataset), BATCH_SIZE)):
+                train_dataset_outputs = model(
+                    train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                    train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                    train_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+                )
+                # print(i)
+                # print(train_dataset_outputs)
+                # print(train_dataset_outputs.size)
+                X_train.append(train_dataset_outputs.logits[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+
+                test_dataset_outputs = model(
+                    test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                    test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                    test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+                )
+                X_test.append(test_dataset_outputs.logits[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+
+                gc.collect()
+                torch.cuda.empty_cache()
+        X_train = np.concatenate(X_train, axis=0)
+        X_test = np.concatenate(X_test, axis=0)
+
+        # save these vectors
+        np.save(Config.MODEL_DIR+"train_vectors_mlm.npy", X_train)
+        np.save(Config.MODEL_DIR+"test_vectors_mlm.npy", X_test)
+
+    train_labels = train_dataset['labels'].numpy()
+    test_labels = test_dataset['labels'].numpy()
+
+    # load these vectors
+    X_train = np.load(Config.MODEL_DIR+"train_vectors_mlm.npy", X_train)
+    X_test = np.load(Config.MODEL_DIR+"test_vectors_mlm.npy", X_test)
+
+    print("Start training the Logistic Regression model.")
+    clf = sm.Logit(train_labels, X_train).fit()
+    print("Logistic Regression Model is trained.")
+    # print(clf.summary())
+
+    # Evaluate the model
+    train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
+    test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
+
+    train_acc = np.mean(train_prediction == train_labels)
+    test_acc = np.mean(test_prediction == test_labels)
+
+    print("Train accuracy: ", train_acc)
+    print("Test accuracy: ", test_acc)
+
+    return test_acc
+    
+
+def load_data_mlm(tokenizer):
+    # gen LineByLineTextDataset
+    train_dataset = LineByLineTextDataset(tokenizer=tokenizer, file_path=Config.TRAIN_DATA_PATH + '/train.csv', block_size=128)
+    test_dataset = LineByLineTextDataset(tokenizer=tokenizer, file_path=Config.TEST_DATA_PATH + '/test.csv', block_size=128)
+    return train_dataset, test_dataset
+
+
+def train_mlm():
+    model = BertForMaskedLM(model_config)
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    training_args = TrainingArguments(
+        output_dir='./results',          # output directory
+        num_train_epochs=5,              # total number of training epochs
+        per_device_train_batch_size=64,  # batch size per device during training
+        per_device_eval_batch_size=64,   # batch size for evaluation
+        logging_dir='./logs',            # directory for storing logs
+        logging_steps=100,
+        do_train=True,
+        do_eval=True,
+        no_cuda=False,
+        load_best_model_at_end=True,
+        evaluation_strategy="epoch",
+        save_strategy="epoch"
+    )
+
+    train_dataset, test_dataset = load_data_mlm(tokenizer)
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+
+    trainer = Trainer(
+        model=model,                         # the instantiated   Transformers model to be trained
+        args=training_args,                  # training arguments, defined above
+        train_dataset=train_dataset,         # training dataset
+        eval_dataset=test_dataset,            # evaluation dataset
+        data_collator=data_collator,
+    )
+
+    train_out = trainer.train()
+
+    eval_results = trainer.evaluate()
+    print(f"Perplexity: {np.exp(eval_results['eval_loss']):.2f}")
+
+    # save the model
+    model.save_pretrained(Config.MODEL_DIR)
+
+    get_accuracy(model, train_dataset, test_dataset, is_classifier=False)
+
+train_mlm()
+
+# model = AutoModelForSequenceClassification.from_pretrained(model_id, config=model_config)
 # model = AutoModelForSequenceClassification.from_config(model_config)
-model = AutoModelForSequenceClassification.from_config(model_config)
+model = AutoModelForSequenceClassification.from_pretrained(Config.MODEL_DIR)
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 training_args = TrainingArguments(
     output_dir='./results',          # output directory
     learning_rate=3e-4,
-    num_train_epochs=10,              # total number of training epochs
+    num_train_epochs=5,              # total number of training epochs
     per_device_train_batch_size=64,  # batch size per device during training
     per_device_eval_batch_size=64,   # batch size for evaluation
     logging_dir='./logs',            # directory for storing logs
@@ -121,72 +303,6 @@ classifier = pipeline('sentiment-analysis', model=model, tokenizer=tokenizer)
 
 gc.collect()
 torch.cuda.empty_cache()
-
-# classifier("love")
-def get_accuracy_pipeline(classifier, test_dataset, tokenizer):
-    test_dataset_text = [tensor[:480] for tensor in test_dataset['input_ids']]
-    # token_id to text
-    test_dataset_text = tokenizer.batch_decode(test_dataset_text)
-    predictions = [classifier(test_dataset_text[i]) for i in range(len(test_dataset))]  
-    labels = [x['labels'] for x in test_dataset]
-    preds = [int(label[0]['label'][-1]) for label in predictions]
-    acc = accuracy_score(labels, preds)
-    return acc
-
-def get_accuracy(model, train_dataset, test_dataset, device='cuda:0'):
-    model=model.to(device)
-    BATCH_SIZE = 2048
-    X_train = []
-    X_test = []
-    
-    with torch.no_grad():
-        # for i in range(0, len(train_dataset), BATCH_SIZE): # to_tqdm
-        for i in tqdm(range(0, len(train_dataset), BATCH_SIZE)):
-            train_dataset_outputs = model(
-                train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
-                train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
-                train_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
-            )
-            # print(i)
-            # print(train_dataset_outputs)
-            X_train.append(train_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
-
-            test_dataset_outputs = model(
-                test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
-                test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
-                test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
-            )
-            X_test.append(test_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
-
-            gc.collect()
-            torch.cuda.empty_cache()
-    X_train = np.concatenate(X_train, axis=0)
-    X_test = np.concatenate(X_test, axis=0)
-
-    train_labels = train_dataset['labels'].numpy()
-    test_labels = test_dataset['labels'].numpy()
-
-    """
-    print("Start training the Logistic Regression model.")
-    clf = sm.Logit(train_labels, X_train).fit()
-    print("Logistic Regression Model is trained.")
-    # print(clf.summary())
-
-    # Evaluate the model
-    train_prediction = np.where(clf.predict(X_train) > 0.5, 1, 0)
-    test_prediction = np.where(clf.predict(X_test) > 0.5, 1, 0)
-`   
-    train_acc = np.mean(train_prediction == train_labels)
-    test_acc = np.mean(test_prediction == test_labels)
-    """
-
-    train_acc = np.mean(np.argmax(X_train, axis=1) == train_labels)
-    test_acc = np.mean(np.argmax(X_test, axis=1) == test_labels)
-
-    print("Train accuracy: ", train_acc)
-    print("Test accuracy: ", test_acc)
-
-    return test_acc
 
 
 # test_acc = get_accuracy_pipeline(classifier, test_dataset, tokenizer)
