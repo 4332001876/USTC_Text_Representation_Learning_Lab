@@ -7,7 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 在此我指定使用2号GPU，可�
 import torch
 import gc
 from transformers import AutoConfig
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, BertModel, BertForPreTraining
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from transformers import Trainer, TrainingArguments
 from transformers import pipeline
@@ -19,7 +19,7 @@ class Config:
     TEST_DATA_PATH = r'/kaggle/input/imdb-movie-review-sentiment-dataset'
 
     # Path to the directory where the model will be saved
-    MODEL_DIR = '/kaggle/working/'
+    MODEL_DIR = '/kaggle/working/models'
 
 def load_data(tokenizer):
     # Create a list of documents
@@ -98,6 +98,12 @@ trainer = Trainer(
 
 train_out = trainer.train()
 
+# save the model
+model.save_pretrained(Config.MODEL_DIR)
+
+# load the model
+model = AutoModelForSequenceClassification.from_pretrained(Config.MODEL_DIR)
+
 classifier = pipeline('sentiment-analysis', model=model, tokenizer=tokenizer)
 
 gc.collect()
@@ -119,30 +125,34 @@ def get_accuracy(model, train_dataset, test_dataset, device='cuda:0'):
     BATCH_SIZE = 32
     X_train = []
     X_test = []
-    for i in range(0, len(train_dataset), BATCH_SIZE):
-        train_dataset_outputs = model(
-            train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
-            train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
-            train_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
-        )
-        X_train.append(train_dataset_outputs.logits.cpu())  # 使用pooler_output作为标签的向量表示
+    
+    with torch.no_grad():
+        for i in range(0, len(train_dataset), BATCH_SIZE):
+            train_dataset_outputs = model(
+                train_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                train_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                train_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+            )
+            # print(i)
+            # print(train_dataset_outputs)
+            X_train.append(train_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
 
-        test_dataset_outputs = model(
-            test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
-            test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
-            test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
-        )
-        X_test.append(test_dataset_outputs.logits.cpu())  # 使用pooler_output作为标签的向量表示
+            test_dataset_outputs = model(
+                test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
+                test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
+                test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
+            )
+            X_test.append(test_dataset_outputs.logits.cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
 
-        gc.collect()
-        torch.cuda.empty_cache()
+            gc.collect()
+            torch.cuda.empty_cache()
+    X_train = np.concatenate(X_train, axis=0)
+    X_test = np.concatenate(X_test, axis=0)
 
-    X_train = torch.cat(X_train, dim=0)
-    X_test = torch.cat(X_test, dim=0)
-    X_train = X_train.detach().numpy()
-    X_test = X_test.detach().numpy()
     train_labels = train_dataset['labels']
     test_labels = test_dataset['labels']
+
+    print("Start training the Logistic Regression model.")
     clf = sm.Logit(train_labels, X_train).fit()
     print("Logistic Regression Model is trained.")
     # print(clf.summary())
