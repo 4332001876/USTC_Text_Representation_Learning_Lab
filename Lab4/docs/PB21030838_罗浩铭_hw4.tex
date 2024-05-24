@@ -107,8 +107,8 @@
 
 
 \begin{abstract}
-  本次实验完成了基于Transformer（BERT）模型的情感分类任务训练的全过程，包括数据处理、模型训练、性能评估，并对比分析了不同训练设定的性能。
-  实验结果显示，
+  本次实验完成了基于Transformer（tiny-BERT）模型的情感分类任务训练的全过程，包括数据处理、模型训练、性能评估，并对比分析了不同训练设定的性能。
+  实验结果显示，模型性能随着hidden size的增大而略微提升，但提升并不明显。且模型即使是在充分预训练的情况下，性能仍然不如Doc2Vec模型。我们还测试了先进的Nomic Embedding模型，其性能远远超过了tiny-BERT模型以及Doc2Vec模型。
   Transformer架构是当今所有性能惊艳的大模型的基石。本次实验中对Transformer架构的探索，将为我们深入学习深度学习在NLP领域的应用提供更好的基础。
 \end{abstract}
 
@@ -131,6 +131,7 @@
 \subsection{数据处理}
 对于MLM预训练数据集，我们将原数据集中的文本塞入\verb|LineByLineTextDataset|类中来构建自回归文本数据集（块大小最大为128），
 然后使用\verb|DataCollatorForLanguageModeling|将其中15\%的token随机mask掉，以此来构建MLM预训练数据集。
+% 对于MLM数据集，我们分别测试了加入无监督数据和不加入无监督数据的情况。
 
 对于分类数据集，我们使用了Huggingface Datasets库来加载IMDB数据集，然后使用中的Tokenizer类来对文本进行分词。
 分词过程中，我们限定每个文本的分词长度为512，对token长度超过512的文本进行，并对长度不足的文本填充\verb|[PAD]| token并加上相应的attention mask。
@@ -140,18 +141,18 @@
 由于BERT模型相当于是原生的Transformer模型的Encoder部分加上特殊的训练方式，因此我们的实验中主要使用了BERT式的模型来完成MLM预训练任务。
 
 我们的模型以Huggingface中的\verb|prajjwal1/bert-tiny|模型为基础，\textbf{从头}对tiny-BERT模型进行训练。
-对于模型架构，我们仅仅修改了hidden_size为实验要求的100和200，并保持intermediate_size是其四倍，其他参数不变。
+对于模型架构，我们仅仅修改了hidden size为实验要求的100和200，并保持intermediate size是其四倍，其他参数不变。
 我们的分词器直接借用了\verb|prajjwal1/bert-tiny|模型的分词器。
 
 我们使用了Transformers库中的\verb|BertForMaskedLM|类来实现MLM预训练任务，使用上述自回归文本数据集来训练模型。其训练参数如下：
 \begin{itemize}
-  \item epoch数为10
-  \item batch size为64
-  \item 学习率为3e-4
-  \item 使用AdamW优化器
-  \item 使用cosine学习率调度器
-  \item 使用warmup比例为0.1
-  \item 使用weight decay为0.01
+  \item[$\bullet$] epoch数为10
+  \item[$\bullet$] batch size为64
+  \item[$\bullet$] 学习率为3e-4
+  \item[$\bullet$] 使用AdamW优化器
+  \item[$\bullet$] 使用cosine学习率调度器
+  \item[$\bullet$] 使用warmup比例为0.1
+  \item[$\bullet$] 使用weight decay为0.01
 \end{itemize}
 其余参数为Transformers库中\verb|TrainingArguments|类的默认参数。
 
@@ -167,17 +168,16 @@
 
 得到的实验结果如表格\ref{tab:results}所示：
 \begin{table}[htbp]
-  \caption{各种模型及参数设置下得到的Doc向量性能}
+  \caption{\small{各种模型及参数设置下得到的Doc向量性能}}
   \label{tab:results}
-  \vspace{5pt}
   \centering
   \begin{tabular}{cccc}
     \toprule
     逻辑回归准确率          & Train   & Test    \\
     \midrule
-    BERT (hidden_size=100)  & $0.710$ & $0.697$ \\
+    BERT (hidden size=100)  & $0.710$ & $0.697$ \\
     \midrule
-    BERT (hidden_size=200)  & $0.718$ & $0.709$ \\
+    BERT (hidden size=200)  & $0.718$ & $0.709$ \\
     \midrule
     \verb|bert-tiny| & $0.766$ & $0.759$ \\
     \midrule
@@ -188,10 +188,10 @@
 
 从表格\ref{tab:results}中我们可以看出：
 \begin{itemize}
-  \item tiny-BERT模型在IMDB测试集上的性能随着hidden size的增大而有所提升，但提升并不明显。
-  \item tiny-BERT模型的预训练效果不如Doc2Vec模型，这可能是因为tiny-BERT模型的归纳偏置较少，且训练数据量不足导致的。
-  \item 在进行较为充分的预训练后，tiny-BERT模型的效果理论上可以提升约5\%，还是不如Doc2Vec模型，这说明Doc2Vec中对Paragraph vector进行迭代优化的过程可能是有很大用处的。
-  \item 我们测试了先进的\verb|nomic-embed-text-v1.5|模型，其性能远远超过了tiny-BERT模型以及Doc2Vec模型。
+  \item[$\bullet$] tiny-BERT模型在IMDB测试集上的性能随着hidden size的增大而有所提升，但提升并不明显。
+  \item[$\bullet$] tiny-BERT模型的预训练效果不如Doc2Vec模型，这可能是因为tiny-BERT模型的归纳偏置较少，且训练数据量不足导致的。
+  \item[$\bullet$] 在进行较为充分的预训练后，tiny-BERT模型的效果理论上可以提升约5\%，还是不如Doc2Vec模型，这说明Doc2Vec中对Paragraph vector进行迭代优化的过程可能是有很大用处的。
+  \item[$\bullet$] 我们测试了先进的\verb|nomic-embed-text-v1.5|模型，其性能远远超过了tiny-BERT模型以及Doc2Vec模型。
 \end{itemize}
 
 % 3 epochs: Train accuracy:  0.64, Test accuracy:  0.62
@@ -206,6 +206,7 @@
 % 5 epochs: Train accuracy:  0.8094, Test accuracy:  0.78704
 % 10 epochs, final params: Train accuracy:  0.7098, Test accuracy:  0.6968
 % 10 epochs, final params, dim=200: Train accuracy:  0.718, Test accuracy:  0.70884
+% 10 epochs, final params, dim=200, more-data: Train accuracy:  0.67632, Test accuracy:  0.66356
 
 % pretrain: Train accuracy:  0.76628, Test accuracy:  0.759
 % pretrain, average token: Train accuracy:  0.76948, Test accuracy:  0.75916
