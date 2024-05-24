@@ -23,6 +23,8 @@ class Config:
     TRAIN_DATA_PATH = r'/kaggle/input/imdb-movie-review-sentiment-dataset'
     TEST_DATA_PATH = r'/kaggle/input/imdb-movie-review-sentiment-dataset'
 
+    MLM_DATA_PATH = '/kaggle/working/mlm_data.txt'
+
     # Path to the directory where the model will be saved
     MODEL_DIR = '/kaggle/working/models'
 
@@ -214,8 +216,15 @@ def get_accuracy_mlm(model, train_dataset, test_dataset, device='cuda:0'):
     
 
 def load_data_mlm(tokenizer):
+    # merge unsupervised and train_data:
+    unsupervised_data = pd.read_csv(Config.TRAIN_DATA_PATH + '/unsupervised.csv')
+    train_data = pd.read_csv(Config.TRAIN_DATA_PATH + '/train.csv')
+    merged_data = pd.concat([unsupervised_data['text'], train_data['text']], ignore_index=True)
+    # output to a file
+    merged_data.to_csv(Config.MLM_DATA_PATH, index=False, header=False)
+
     # gen LineByLineTextDataset
-    train_dataset = LineByLineTextDataset(tokenizer=tokenizer, file_path=Config.TRAIN_DATA_PATH + '/train.csv', block_size=128)
+    train_dataset = LineByLineTextDataset(tokenizer=tokenizer, file_path=Config.MLM_DATA_PATH, block_size=128)
     test_dataset = LineByLineTextDataset(tokenizer=tokenizer, file_path=Config.TEST_DATA_PATH + '/test.csv', block_size=128)
     return train_dataset, test_dataset
 

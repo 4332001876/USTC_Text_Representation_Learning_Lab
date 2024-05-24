@@ -137,7 +137,9 @@
 
 
 \subsection{模型实现}
-我们的模型以Huggingface中的\verb|prajjwal1/bert-tiny|模型为基础，\textbf{从头}对BERT模型进行训练。
+由于BERT模型相当于是原生的Transformer模型的Encoder部分加上特殊的训练方式，因此我们的实验中主要使用了BERT式的模型来完成MLM预训练任务。
+
+我们的模型以Huggingface中的\verb|prajjwal1/bert-tiny|模型为基础，\textbf{从头}对tiny-BERT模型进行训练。
 对于模型架构，我们仅仅修改了hidden_size为实验要求的100和200，并保持intermediate_size是其四倍，其他参数不变。
 我们的分词器直接借用了\verb|prajjwal1/bert-tiny|模型的分词器。
 
@@ -154,33 +156,43 @@
 其余参数为Transformers库中\verb|TrainingArguments|类的默认参数。
 
 最后，我们使用\verb|statsmodels|库中的逻辑回归类\verb|Logit|来完成文本情感分类任务，
-使用训练好的BERT模型的\verb|[CLS]|位置对应输出来作为文本的向量表示。
+使用训练好的tiny-BERT模型的\verb|[CLS]|位置对应输出来作为文本的向量表示。
 
 
 
 \section{实验结果与分析}
 
-我们使用的向量维度训得BERT模型，此后基于训得的BERT模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
-此外，我们还比较了预训练的\verb|prajjwal1/bert-tiny|模型以及当前先进的
+我们使用的向量维度训得tiny-BERT模型，此后基于训得的tiny-BERT模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+此外，我们还比较了预训练的\verb|prajjwal1/bert-tiny|模型以及当前先进的Embedding模型\verb|nomic-ai/nomic-embed-text-v1.5|模型（2024年2月份提出的近SOTA模型，基于BERT架构，参数量137M）在IMDB测试集上的性能。
 
 得到的实验结果如表格\ref{tab:results}所示：
 \begin{table}[htbp]
-  \caption{Doc2Vec模型在不同训练方法下得到的Doc向量性能}
+  \caption{各种模型及参数设置下得到的Doc向量性能}
   \label{tab:results}
   \vspace{5pt}
   \centering
   \begin{tabular}{cccc}
     \toprule
-    逻辑回归准确率       & PV-DM   & PV-DBOW \\
+    逻辑回归准确率          & Train   & Test    \\
     \midrule
-    Hierarchical Softmax & $0.830$ & $0.853$ \\
+    BERT (hidden_size=100)  & $0.710$ & $0.697$ \\
     \midrule
-    Negative Sampling    & $0.822$ & $0.861$ \\
+    BERT (hidden_size=200)  & $0.718$ & $0.709$ \\
+    \midrule
+    \verb|bert-tiny| & $0.766$ & $0.759$ \\
+    \midrule
+    \verb|nomic-embed-text-v1.5| & $0.945$ & $0.933$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-从表格\ref{tab:results}中我们可以看出：PV-DBOW的训练方法明显比PV-DM的训练方法性能更好，Negative Sampling与Hierarchical Softmax性能相当。
+从表格\ref{tab:results}中我们可以看出：
+\begin{itemize}
+  \item tiny-BERT模型在IMDB测试集上的性能随着hidden size的增大而有所提升，但提升并不明显。
+  \item tiny-BERT模型的预训练效果不如Doc2Vec模型，这可能是因为tiny-BERT模型的归纳偏置较少，且训练数据量不足导致的。
+  \item 在进行较为充分的预训练后，tiny-BERT模型的效果理论上可以提升约5\%，还是不如Doc2Vec模型，这说明Doc2Vec中对Paragraph vector进行迭代优化的过程可能是有很大用处的。
+  \item 我们测试了先进的\verb|nomic-embed-text-v1.5|模型，其性能远远超过了tiny-BERT模型以及Doc2Vec模型。
+\end{itemize}
 
 % 3 epochs: Train accuracy:  0.64, Test accuracy:  0.62
 % 10 epochs: Train accuracy:  0.67796, Test accuracy:  0.64824
@@ -197,6 +209,8 @@
 
 % pretrain: Train accuracy:  0.76628, Test accuracy:  0.759
 % pretrain, average token: Train accuracy:  0.76948, Test accuracy:  0.75916
+
+% nomic: Train accuracy:  0.945, Test accuracy:  0.93304
 
 \end{document}
 
