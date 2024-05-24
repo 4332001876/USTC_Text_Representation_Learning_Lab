@@ -127,52 +127,41 @@
 % - 简要描述处理数据和实现模型的过程，其中使用了哪些数据结构，遇到了哪些问题，是如何解决的
 
 \section{项目实现}
+我们使用了Huggingface Datasets库及Huggingface Transformers库来实现我们的项目。
 \subsection{数据处理}
-本次实验中IMDB数据集的影评文本作为输入时同样需要进行清洗、分词等预处理。
+对于MLM预训练数据集，我们将原数据集中的文本塞入\verb|LineByLineTextDataset|类中来构建自回归文本数据集（块大小最大为128），
+然后使用\verb|DataCollatorForLanguageModeling|将其中15\%的token随机mask掉，以此来构建MLM预训练数据集。
 
-由于本次的影评文本中较少出现结构符，因此我们所做的数据处理工作主要包括：
-\begin{itemize}
-  \item 将所有大写字母全部转为小写字母
-  \item 将换行符\verb|<br />|替换为空格
-  \item 在所有标点符号左右添加空格
-  \item 按空格分词
-\end{itemize}
-
-最终我们得到了分词后的影评文本，用于后续的Doc2Vec模型训练。
+对于分类数据集，我们使用了Huggingface Datasets库来加载IMDB数据集，然后使用中的Tokenizer类来对文本进行分词。
+分词过程中，我们限定每个文本的分词长度为512，对token长度超过512的文本进行，并对长度不足的文本填充\verb|[PAD]| token并加上相应的attention mask。
 
 
 \subsection{模型实现}
-我们使用了gensim库来训练Doc2Vec模型。
+我们的模型以Huggingface中的\verb|prajjwal1/bert-tiny|模型为基础，\textbf{从头}对BERT模型进行训练。
+对于模型架构，我们仅仅修改了hidden_size为实验要求的100和200，并保持intermediate_size是其四倍，其他参数不变。
+我们的分词器直接借用了\verb|prajjwal1/bert-tiny|模型的分词器。
 
-gensim库中的Doc2Vec模型要求输入的文档是一个TaggedDocument对象的迭代器，其中每个TaggedDocument对象包含一个文档的分词列表和一个标签。
-我们只需把按上述方法分词后的影评文本作为输入，将每个影评文本的标签设为其在数据集中的索引即可。
-
-我们接着使用gensim库中的Doc2Vec类来训练Doc2Vec模型，然后用训练好的模型生成文本的向量表示，
-并使用这些向量表示及情感分类标签来训练文本情感分类的逻辑回归模型。
-逻辑回归使用了LightGBM来完成，具体使用了lightgbm库的LGBMClassifier类来实现。
-
-\subsection{训练参数设置}
-我们根据实验要求，设置了如下参数：词向量维度200，窗口大小5个词，词频过滤的阈值为5。
-
-同时，我们还设置了如下参数：
+我们使用了Transformers库中的\verb|BertForMaskedLM|类来实现MLM预训练任务，使用上述自回归文本数据集来训练模型。其训练参数如下：
 \begin{itemize}
-  \item \verb|dm_concat|为0，\verb|dm_mean|为1，也即综合多个词的向量时，不使用拼接，也不使用求和，而是使用平均
-  \item Negative Sampling数为5
-  \item 学习率为0.025
-  \item epoch数为20
+  \item epoch数为10
+  \item batch size为64
+  \item 学习率为3e-4
+  \item 使用AdamW优化器
+  \item 使用cosine学习率调度器
+  \item 使用warmup比例为0.1
+  \item 使用weight decay为0.01
 \end{itemize}
+其余参数为Transformers库中\verb|TrainingArguments|类的默认参数。
 
-其余参数为gensim库中Doc2Vec类的默认参数。
-
-另外，我们按照我们此前参加Kaggle比赛"Titanic - Machine Learning from Disaster"的经验设置了LightGBM的参数，详见附录。
+最后，我们使用\verb|statsmodels|库中的逻辑回归类\verb|Logit|来完成文本情感分类任务，
+使用训练好的BERT模型的\verb|[CLS]|位置对应输出来作为文本的向量表示。
 
 
 
 \section{实验结果与分析}
-% 四种方法训练得到的doc向量的性能结果
-% 结合你对四种方法结果的观察，比较分析HS与NS，以及PV-DM和PV-DBOW
 
-我们使用不同训练方法训得doc2vec向量，此后基于训得的doc2vec模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+我们使用的向量维度训得BERT模型，此后基于训得的BERT模型来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+此外，我们还比较了预训练的\verb|prajjwal1/bert-tiny|模型以及当前先进的
 
 得到的实验结果如表格\ref{tab:results}所示：
 \begin{table}[htbp]
@@ -201,6 +190,13 @@ gensim库中的Doc2Vec模型要求输入的文档是一个TaggedDocument对象�
 
 % pretrained mlm (hidden_size=128, batch_size=64, lr=3e-4): Train accuracy:  0.8094, Test accuracy:  0.78704
 
+% MLM:
+% 5 epochs: Train accuracy:  0.8094, Test accuracy:  0.78704
+% 10 epochs, final params: Train accuracy:  0.7098, Test accuracy:  0.6968
+% 10 epochs, final params, dim=200: Train accuracy:  0.718, Test accuracy:  0.70884
+
+% pretrain: Train accuracy:  0.76628, Test accuracy:  0.759
+% pretrain, average token: Train accuracy:  0.76948, Test accuracy:  0.75916
 
 \end{document}
 

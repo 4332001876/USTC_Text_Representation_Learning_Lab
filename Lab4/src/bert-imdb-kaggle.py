@@ -148,7 +148,7 @@ def get_accuracy(model, train_dataset, test_dataset, device='cuda:0', is_classif
 
 def get_accuracy_mlm(model, train_dataset, test_dataset, device='cuda:0'):
     model=model.to(device)
-    BATCH_SIZE = 32
+    BATCH_SIZE = 512
 
     IS_VECTOR_SAVED = False
     if not IS_VECTOR_SAVED:
@@ -165,15 +165,17 @@ def get_accuracy_mlm(model, train_dataset, test_dataset, device='cuda:0'):
                 )
                 # print(i)
                 # print(train_dataset_outputs)
-                # print(train_dataset_outputs.size)
-                X_train.append(train_dataset_outputs.logits[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+                # print(train_dataset_outputs.last_hidden_state[:,0,:].shape)
+                # X_train.append(train_dataset_outputs.last_hidden_state[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+                X_train.append(torch.mean(train_dataset_outputs.last_hidden_state,dim=1).cpu().detach().numpy())
 
                 test_dataset_outputs = model(
                     test_dataset['input_ids'][i:i+BATCH_SIZE].to(device),
                     test_dataset['token_type_ids'][i:i+BATCH_SIZE].to(device),
                     test_dataset['attention_mask'][i:i+BATCH_SIZE].to(device),
                 )
-                X_test.append(test_dataset_outputs.logits[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+                # X_test.append(test_dataset_outputs.last_hidden_state[:,0,:].cpu().detach().numpy())  # 使用pooler_output作为标签的向量表示
+                X_test.append(torch.mean(test_dataset_outputs.last_hidden_state,dim=1).cpu().detach().numpy()) 
 
                 gc.collect()
                 torch.cuda.empty_cache()
@@ -188,8 +190,10 @@ def get_accuracy_mlm(model, train_dataset, test_dataset, device='cuda:0'):
     test_labels = test_dataset['labels'].numpy()
 
     # load these vectors
-    X_train = np.load(Config.MODEL_DIR+"train_vectors_mlm.npy", X_train)
-    X_test = np.load(Config.MODEL_DIR+"test_vectors_mlm.npy", X_test)
+    X_train = np.load(Config.MODEL_DIR+"train_vectors_mlm.npy")
+    X_test = np.load(Config.MODEL_DIR+"test_vectors_mlm.npy")
+
+    gc.collect()
 
     print("Start training the Logistic Regression model.")
     clf = sm.Logit(train_labels, X_train).fit()
@@ -221,7 +225,11 @@ def train_mlm():
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     training_args = TrainingArguments(
         output_dir='./results',          # output directory
-        num_train_epochs=5,              # total number of training epochs
+        learning_rate=3e-4,
+        num_train_epochs=10,              # total number of training epochs
+        lr_scheduler_type = 'cosine',
+        warmup_ratio = 0.1,
+        weight_decay=0.01,
         per_device_train_batch_size=64,  # batch size per device during training
         per_device_eval_batch_size=64,   # batch size for evaluation
         logging_dir='./logs',            # directory for storing logs
@@ -252,8 +260,6 @@ def train_mlm():
 
     # save the model
     model.save_pretrained(Config.MODEL_DIR)
-
-    get_accuracy(model, train_dataset, test_dataset, is_classifier=False)
 
 train_mlm()
 
@@ -309,3 +315,7 @@ torch.cuda.empty_cache()
 # print(f"Test accuracy: {test_acc}")
 test_acc = get_accuracy(model, train_dataset, test_dataset)
 
+#test mlm
+# model = BertModel.from_pretrained(Config.MODEL_DIR)
+# model = BertModel.from_pretrained(model_id)
+# get_accuracy_mlm(model, train_dataset, test_dataset)
