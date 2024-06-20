@@ -1,15 +1,15 @@
 import pandas as pd
 
-basic_prompt = r'''
-SEMENTIC ANALYSIS:
-Please read the movie review below and determine the sentiment of the review. The sentiment can be positive or negative. Please put the answer inside \boxed{}.
+basic_prompt_fmt = r'''
+SENTIMENT ANALYSIS TASK:
+Carefully examine the movie review provided below and ascertain the overall sentiment expressed in the review. You should classify the sentiment as either positive or negative. Please enclose your conclusion within the brackets, like so: [answer].
+
 REVIEW:
-{review}
 '''
 
 class TestDataLoader:
-    def __init__(self, test_data_path):
-        self.test_data_path = test_data_path
+    def __init__(self, data_path):
+        self.test_data_path = data_path + "/plain_text/test-00000-of-00001.parquet"
         self.test_set = pd.read_parquet(self.test_data_path)[0:100]
         # print(train_set.head())
         # print(test_set.head())
@@ -40,6 +40,7 @@ class TestDataLoader:
         return self.load_data(idx)
     
     def basic_prompt(self, idx):
-        document, label = self.load_data(idx)
-        return basic_prompt.format(review=document), label
+        review, label = self.load_data(idx)
+        # print(review, label)
+        return basic_prompt_fmt + review, label
     

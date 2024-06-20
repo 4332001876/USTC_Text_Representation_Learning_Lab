@@ -2,6 +2,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 cd ../
 
-python3 main.py \
+nohup python3 main.py \
     --exp_name baseline \
+    > baseline.log &
     # --model qwen-long

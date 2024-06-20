@@ -18,7 +18,7 @@ def get_args():
 def main():
     args = get_args()
     exp = Exp(args)
-    exp.test()
+    exp.run()
 
 if __name__ == "__main__":
     main()

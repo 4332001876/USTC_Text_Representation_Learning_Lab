@@ -34,12 +34,23 @@ class Exp:
             problem, label = self.test_loader.basic_prompt(idx)
             response = self.agent.answer(problem)
             result = verify_ans(response, label)
+
+            if idx == 0:
+                print("Example:")
+                print(f"Problem: {problem}")
+                print(f"Response: {response}")
+                print(f"Label: {label}")
+
             if result == 1:
                 correct += 1
             elif result == 0:
                 incorrect += 1
             else:
                 ambiguous += 1
+
+            if idx % 1000 == 999:
+                print(f"Correct: {correct}, Incorrect: {incorrect}, Ambiguous: {ambiguous}")
+                print("Running Accuracy: %.4f"%((correct + 0.5 * ambiguous) / (correct + incorrect + ambiguous)))
         
         print(f"Correct: {correct}, Incorrect: {incorrect}, Ambiguous: {ambiguous}")
         print("Accuracy: %.4f"%((correct + 0.5 * ambiguous) / (correct + incorrect + ambiguous)))
