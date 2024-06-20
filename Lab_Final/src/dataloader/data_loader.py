@@ -7,10 +7,47 @@ Carefully examine the movie review provided below and ascertain the overall sent
 REVIEW:
 '''
 
+CARP_prompt_fmt = r'''
+This is an overall sentiment classifier for movie reviews.
+First, list CLUES (i.e., keywords, phrases, contextual information, semantic relations, semantic meaning, tones, 
+references) that support the sentiment determination of input..
+Second, deduce the diagnostic REASONING process from premises (i.e., clues, input) that supports the INPUT 
+sentiment determination (Limit the number of words to 130).
+Third, based on clues, reasoning and input, determine the overall SENTIMENT of INPUT as Positive or Negative. You should classify the sentiment as either positive or negative.
+
+For example:
+INPUT: press the delete key
+CLUES: delete key
+REASONING: The phrase "delete key" implies an action of removing something, which could be interpreted as a 
+negative sentiment.
+SENTIMENT: Negative
+
+Please provide your response in the following format:
+CLUES: [clues]
+REASONING: [reasoning]
+SENTIMENT: [sentiment]
+
+Now it's your turn. Please analyze the sentiment of the movie review below:
+INPUT: '''
+
+def CARP_prompt(problem):
+    """
+    @misc{sun2023text,
+      title={Text Classification via Large Language Models}, 
+      author={Xiaofei Sun and Xiaoya Li and Jiwei Li and Fei Wu and Shangwei Guo and Tianwei Zhang and Guoyin Wang},
+      year={2023},
+      eprint={2305.08377},
+      archivePrefix={arXiv},
+      primaryClass={id='cs.CL' full_name='Computation and Language' is_active=True alt_name='cmp-lg' in_archive='cs' is_general=False description='Covers natural language processing. Roughly includes material in ACM Subject Class I.2.7. Note that work on artificial languages (programming languages, logics, formal systems) that does not explicitly address natural-language issues broadly construed (natural-language processing, computational linguistics, speech, text retrieval, etc.) is not appropriate for this area.'}
+    }
+    """
+
+    return CARP_prompt_fmt+problem
+
 class TestDataLoader:
     def __init__(self, data_path):
         self.test_data_path = data_path + "/plain_text/test-00000-of-00001.parquet"
-        self.test_set = pd.read_parquet(self.test_data_path)[0:100]
+        self.test_set = pd.read_parquet(self.test_data_path)[::10]
         # print(train_set.head())
         # print(test_set.head())
         # dataset_structure: [text, label]
@@ -44,3 +81,6 @@ class TestDataLoader:
         # print(review, label)
         return basic_prompt_fmt + review, label
     
+    def CARP_prompt(self, idx):
+        review, label = self.load_data(idx)
+        return CARP_prompt(review), label
