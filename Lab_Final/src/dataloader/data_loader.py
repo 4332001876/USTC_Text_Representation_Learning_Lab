@@ -7,6 +7,9 @@ Carefully examine the movie review provided below and ascertain the overall sent
 REVIEW:
 '''
 
+basic_prompt_fmt_2 = r'''Please perform Sentiment Classification Task. Given the Sentence from imdb below, assign a sentiment label from ['negative','positive']. Return label only without any other text.\n Here is the Sentence: '''
+
+
 CARP_prompt_fmt = r'''
 This is an overall sentiment classifier for movie reviews.
 First, list CLUES (i.e., keywords, phrases, contextual information, semantic relations, semantic meaning, tones, 
@@ -18,9 +21,13 @@ Third, based on clues, reasoning and input, determine the overall SENTIMENT of I
 For example:
 INPUT: press the delete key
 CLUES: delete key
-REASONING: The phrase "delete key" implies an action of removing something, which could be interpreted as a 
-negative sentiment.
+REASONING: The phrase "delete key" implies an action of removing something, which could be interpreted as a negative sentiment.
 SENTIMENT: Negative
+
+INPUT: He successfully managed to create a heartwarming story that resonated with the audience.
+CLUES: successfully, heartwarming story, resonated
+REASONING: The use of "successfully" indicates accomplishment, "heartwarming story" suggests positive emotions, "resonated" implies a strong positive connection, and mentioning it was with the "audience" highlights broad appeal, all pointing towards a favorable view, which could be interpreted as a positive sentiment.
+SENTIMENT: Positive
 
 Please provide your response in the following format:
 CLUES: [clues]
@@ -79,7 +86,7 @@ class TestDataLoader:
     def basic_prompt(self, idx):
         review, label = self.load_data(idx)
         # print(review, label)
-        return basic_prompt_fmt + review, label
+        return basic_prompt_fmt_2 + review, label
     
     def CARP_prompt(self, idx):
         review, label = self.load_data(idx)
