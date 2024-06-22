@@ -136,25 +136,54 @@
 % • 包括：前言、方法（主要工作）、实验设定和结果、分析讨论、结论、组员分工、参考文献列表
 % • 作业提交时间：6月23日00:00之前
 
+\section{前言}
+近年来，预训练模型特别是大语言模型（LLMs）在自然语言处理领域展现了十分强大的实力，取得了十分显著的成功。这些模型的成功得益于其在大规模文本数据上的预训练，使得它们能够捕捉到丰富的语言知识，并且只需针对下游特定任务进行微调，甚至仅获取几个示例或清晰的任务定义，就能在许多自然语言处理任务和基准测试中取得显著的成效。在诸如问答、情感分析、自然语言推理、命名实体识别、关系抽取及信息抽取等多种自然语言处理任务上，达到与监督基准相媲美甚至超越最先进成果的性能水平。
 
-\section{Introduction}
+在此背景下，我们在这次实验中将深入探究预训练模型/大语言模型在情感分析任务中的应用。我们将使用IMDB数据集，通过预训练模型/大语言模型来实现情感分析任务，并对比不同技术方案的效果。
+
+\section{方法}
 % • 动机（包括方法选择、实验设定的原因等）
 我们对比了以下技术方案的效果：
+\begin{itemize}
+  \item[$\bullet$] 我们的探索将从BERT架构开始，该架构虽在GPT系列模型的成功下略显式微，但其在生成文本Embedding等领域仍有其独特的架构优势，其模型通常也较为小巧。\verb|nomic-embed-text-v1.5|\cite{nomic}是一款开源的基于长文本BERT架构的文本embedding模型，其在2024年2月发布，以137M的参数量取得了接近SOTA的水平。我们基于该模型输出的影评embedding来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
+  \item[$\bullet$] 预训练模型
+  \item[$\bullet$] CARP prompt\cite{CARP}
+  \item[$\bullet$] 微调
+\end{itemize}
 
-nomic
 
-预训练模型
 
-CARP prompt
 
-微调
 
-\section{实验设定和结果}
+
+
+
+\section{实验设定}
 % • 实验细节（数据统计信息、模型参数等）
+\subsection{Nomic Embed}
+Nomic Embed模型支持不同大小的
+
+\subsection{微调实验}
+\subsubsection{指令微调数据集构造}
+原imdb数据集'text'-'label'的格式较不适用于预训练大模型的SFT，我们参照经典的alpaca数据集的格式，将其改为严格的指令微调格式，也即intruction-input-output的形式。在指令监督微调时，instruction列对应的内容会与 input 列对应的内容拼接后作为人类指令，而 output列对应的内容作为模型回答。
+\subsubsection{LoRA微调参数优化}
+LoRA超参数\(r\)秩的选择，实质上是在模型的复杂度、适应灵活性与潜在的欠拟合或过拟合风险间寻求平衡。依据原始论文\cite{hu2021lora}提供的实践指导，结合初步的预实验分析，我们确定LoRA的秩\(r=8\)及缩放系数\(\alpha=16\)作为实验配置。（预实验qwen2 zero-shot结果表明，对于如IMDB情感分类这类相对简单的任务，由于所需参数更新的维度不高，低秩矩阵的秩可适当减小至8；同时，基于经验，设置\(\alpha\)为\(r\)的2倍为宜,故取32）。此外，将LoRA作用于用于模型的某些层，包括：o\_proj, q\_proj, gate\_proj, down\_proj, up\_proj, k\_proj, 以及 v\_proj。
+
+我们选用完整的imdb训练集，并按前文方式改造成alpaca格式的指令微调数据集进行LoRA微调实验。采用1e-5的学习率，20step的warm-up，flash-attention2\cite{dao2023flashattention2}加速。可训练参数4.6M，为原模型参数总量的0.29，实验需要单卡A100
+
+\includegraphics[width=0.6\linewidth]{./pic/}
+
+\subsubsection{全量微调}
+
+\subsection{消融实验}
+
+\section{实验结果分析与讨论}
+% • 实验结果分析（需要附主要实验结果的图表）
+% • 讨论（实验中遇到的困难和解决方法等）
 
 得到的实验结果如表格\ref{tab:pretrained_results}所示：
 \begin{table}[htbp]
-  \caption{\small{各种模型及参数设置下得到的Doc向量性能}}
+  \caption{\small{各预训练模型在IMDB数据集上的分类准确率}}
   \label{tab:pretrained_results}
   \centering
   \begin{tabular}{cccc}
@@ -172,17 +201,6 @@ CARP prompt
   \end{tabular}
 \end{table}
 
-
-\section{微调实验}
-\subsection{指令微调数据集构造}
-\subsection{LoRA微调}
-根据论文X给出的实践经验指导，我们合理选择了LoRA的超参数与部分训练参数：
-...
-\subsection{全量微调}
-\section{分析讨论}
-% • 实验结果分析（需要附主要实验结果的图表）
-% • 讨论（实验中遇到的困难和解决方法等）
-
 \section{结论}
 
 
@@ -190,11 +208,14 @@ CARP prompt
 % • 组员分工及贡献情况说明
 
 \section{参考文献}
-% • 组员分工及贡献情况说明
+
+\bibliographystyle{unsrt}   % unsrt 为文献的格式类型
+\bibliography{nlp_final_report} % nlp_final_report 为我们的.bib文件名
 
 
 
-
+\appendix
+\section{所用Prompt}
 
 \end{document}
 
