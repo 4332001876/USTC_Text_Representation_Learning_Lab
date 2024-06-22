@@ -60,7 +60,7 @@
 }
 
 
-\title{文本表征学习Final: 基于预训练模型/大模型的情感分析}
+\title{文本表征学习Final: 基于预训练大模型的情感分析}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -70,45 +70,33 @@
 % lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
 % authors names on the first line, and the last on the second line, try using
 % \AND instead of \And before the third author name.
-
-
 \author{
-  罗浩铭 \\
-  PB21030838\\
-  中国科学技术大学\ 安徽合肥 230026 \\
-  \texttt{mzfslhm@mail.ustc.edu.cn} \\
-  \And
-  谢天 \\
-  PB21061328\\
-  中国科学技术大学\ 安徽合肥 230026 \\
-  \texttt{xqs2002@mail.ustc.edu.cn} \\
-  \And
-  韦星光 \\
-  PB21051056\\
-  中国科学技术大学\ 安徽合肥 230026 \\
-  \texttt{wesustc@mail.ustc.edu.cn} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
+~~{\large 罗浩铭\quad}
+~~{\large 谢天\quad}
+~~{\large 韦星光\quad}\\
+~~{PB21030838}
+~~{PB21061328}
+~~{PB21051056}\\
+中国科学技术大学\ \ \ 安徽合肥\\
+{\tt \{mzfslhm, xqs2002, wesustc\}@ustc.mail.edu.cn} \\
 }
+
+% \author{
+%   罗浩铭 \\
+%   PB21030838\\
+%   中国科学技术大学\ 安徽合肥 230026 \\
+%   \texttt{mzfslhm@mail.ustc.edu.cn} \\
+%   \And
+%   谢天 \\
+%   PB21061328\\
+%   中国科学技术大学\ 安徽合肥 230026 \\
+%   \texttt{xqs2002@mail.ustc.edu.cn} \\
+%   \And
+%   韦星光 \\
+%   PB21051056\\
+%   中国科学技术大学\ 安徽合肥 230026 \\
+%   \texttt{wesustc@mail.ustc.edu.cn} \\
+% }
 
 
 \begin{document}
@@ -148,15 +136,8 @@
 % • 包括：前言、方法（主要工作）、实验设定和结果、分析讨论、结论、组员分工、参考文献列表
 % • 作业提交时间：6月23日00:00之前
 
-\section{前言}
-在自然语言处理领域，大型语言模型（LLMs）已彰显其作为强大工具的潜力，展现出在各种NLP下游任务中的优异性能。这些模型的成功得益于其在大规模文本数据上的预训练，使得它们能够捕捉到丰富的语言知识，并能够在少量标注数据上进行微调以适应特定任务。
 
-仅需少量示例演示，甚至只需清晰的任务定义，这些模型即可被激活以生成新测试样本的结果，且在诸如问答、自然语言推理、命名实体识别、关系抽取及信息抽取等多种自然语言处理任务上，达到与监督基准相媲美甚至超越最先进成果的性能水平。
-
-在此背景下，我们在这次实验中将深入探究预训练模型/大语言模型在情感分析任务中的应用。我们将使用IMDB数据集，通过预训练模型/大语言模型来实现情感分析任务，并对比不同技术方案的效果。
-
-
-\section{方法}
+\section{Introduction}
 % • 动机（包括方法选择、实验设定的原因等）
 我们对比了以下技术方案的效果：
 
@@ -171,21 +152,16 @@ CARP prompt
 \section{实验设定和结果}
 % • 实验细节（数据统计信息、模型参数等）
 
-One-Shot
-整个数据集
-未经训练集训练
-默认参数：\verb|top-p|为0.8
-
 得到的实验结果如表格\ref{tab:pretrained_results}所示：
 \begin{table}[htbp]
-  \caption{\small{各预训练模型在IMDB数据集上的分类结果（One-Shot）}}
+  \caption{\small{各种模型及参数设置下得到的Doc向量性能}}
   \label{tab:pretrained_results}
   \centering
   \begin{tabular}{cccc}
     \toprule
-    模型                   & Test Accuracy    \\
+    模型                   & Accuracy         \\
     \midrule
-    \verb|nomic-embed-text-v1.5| & $0.933$          \\
+    \verb|nomic-embed-text-v1.5| & $0.945$          \\
     \midrule
     \verb|Qwen2-0.5B-Instruct| & $0.745$          \\
     \midrule
@@ -196,16 +172,16 @@ One-Shot
   \end{tabular}
 \end{table}
 
-由于使用CARP prompt的方法生成内容较长，因此我们仅对测试集的子集进行实验。
-我们选取了编号个位数为0的样本共2500个样本作为测试集的子集，由于测试集前12500个样本label为0，后12500个样本label为1，因此我们的选取方式可以保证正负样本是平衡的。
 
-CARP、微调
-
+\section{微调实验}
+\subsection{指令微调数据集构造}
+\subsection{LoRA微调}
+根据论文X给出的实践经验指导，我们合理选择了LoRA的超参数与部分训练参数：
+...
+\subsection{全量微调}
 \section{分析讨论}
 % • 实验结果分析（需要附主要实验结果的图表）
 % • 讨论（实验中遇到的困难和解决方法等）
-
-scaling law
 
 \section{结论}
 

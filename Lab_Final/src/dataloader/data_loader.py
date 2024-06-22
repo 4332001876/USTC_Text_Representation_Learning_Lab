@@ -10,6 +10,12 @@ REVIEW:
 basic_prompt_fmt_2 = r'''Please perform Sentiment Classification Task. Given the Sentence from imdb below, assign a sentiment label from ['negative','positive']. Return label only without any other text.\n Here is the Sentence: '''
 
 
+basic_prompt_fmt_3 = r'''
+Carefully examine the movie review provided below and ascertain the overall sentiment expressed in the review. You should classify the sentiment as either positive or negative. Provide your answer solely as a classification without additional text. 
+Review Sentence:
+'''
+
+
 CARP_prompt_fmt = r'''
 This is an overall sentiment classifier for movie reviews.
 First, list CLUES (i.e., keywords, phrases, contextual information, semantic relations, semantic meaning, tones, 
@@ -86,7 +92,7 @@ class TestDataLoader:
     def basic_prompt(self, idx):
         review, label = self.load_data(idx)
         # print(review, label)
-        return basic_prompt_fmt_2 + review, label
+        return basic_prompt_fmt_3 + review, label
     
     def CARP_prompt(self, idx):
         review, label = self.load_data(idx)
