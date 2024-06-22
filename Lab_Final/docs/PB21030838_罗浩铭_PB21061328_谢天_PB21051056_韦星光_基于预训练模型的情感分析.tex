@@ -34,9 +34,10 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
-
+\usepackage{graphicx} 
 \usepackage{listings}
 \usepackage{color}
+\usepackage{subfig}
 
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
@@ -60,7 +61,7 @@
 }
 
 
-\title{文本表征学习Final: 基于预训练大模型的情感分析}
+\title{文本表征学习Final: 基于预训练/大模型的情感分析}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -78,7 +79,7 @@
 ~~{PB21061328}
 ~~{PB21051056}\\
 中国科学技术大学\ \ \ 安徽合肥\\
-{\tt \{mzfslhm, xqs2002, wesustc\}@ustc.mail.edu.cn} \\
+{\tt \{mzfslhm, xqs2002, xgwei\}@ustc.mail.edu.cn} \\
 }
 
 % \author{
@@ -95,21 +96,12 @@
 %   韦星光 \\
 %   PB21051056\\
 %   中国科学技术大学\ 安徽合肥 230026 \\
-%   \texttt{wesustc@mail.ustc.edu.cn} \\
+%   \texttt{xgwei@mail.ustc.edu.cn} \\
 % }
 
 
 \begin{document}
-
-
 \maketitle
-
-
-\begin{abstract}
-  abstract
-\end{abstract}
-
-
 % 期末作业：基于预训练/大模型的情感分析
 % 任务：使用自选模型实现情感分析，完成实验报告
 % 数据集：情感分析数据集IMDB
@@ -135,24 +127,20 @@
 % • 提交：不超过4页（不含组员分工和参考文献）论文形式的报告
 % • 包括：前言、方法（主要工作）、实验设定和结果、分析讨论、结论、组员分工、参考文献列表
 % • 作业提交时间：6月23日00:00之前
+\begin{abstract}
+  预训练模型特别是大语言模型在NLP领域取得了巨大成功。本次实验中，我们对比分析了Nomic Embed模型，LLM zero-shot分类，Prompt Engineering，微调等各类利用预训练模型进行情感分类的方案性能。我们发现，微调能带来最佳性能，且使用数据过滤能在几乎不影响性能的情况下显著提高训练效率。大模型的zero-shot能力接近原有SOTA水平，而过于复杂的Prompt Engineering可能损害大模型的性能。同时，Nomic Embed模型能在极少参数量下取得媲美大模型的结果。最终，我们使用LoRA微调1.5B模型取得了0.955的准确率。
+\end{abstract}
 
 \section{前言}
-近年来，预训练模型特别是大语言模型（LLMs）在自然语言处理领域展现了十分强大的实力，取得了十分显著的成功。这些模型的成功得益于其在大规模文本数据上的预训练，使得它们能够捕捉到丰富的语言知识，并且只需针对下游特定任务进行微调，甚至仅获取几个示例或清晰的任务定义，就能在许多自然语言处理任务和基准测试中取得显著的成效。在诸如问答、情感分析、自然语言推理、命名实体识别、关系抽取及信息抽取等多种自然语言处理任务上，达到与监督基准相媲美甚至超越最先进成果的性能水平。
-
-在此背景下，我们在这次实验中将深入探究预训练模型/大语言模型在情感分析任务中的应用。我们将使用IMDB数据集，通过预训练模型/大语言模型来实现情感分析任务，并对比不同技术方案的效果。
+近年来，预训练模型特别是大语言模型（LLMs）在自然语言处理领域取得了十分显著的成功。这些模型的成功得益于其在大规模文本数据上的预训练，使得它们能够捕捉到丰富的语言知识，并且只需针对下游特定任务进行微调，甚至仅获取几个示例或清晰的任务定义，就能在许多自然语言处理任务取得显著的成效。在此背景下，我们使用IMDB数据集，通过预训练模型/大语言模型来实现情感分析任务，并对比不同技术方案的效果。
 
 \section{方法}
-% • 动机（包括方法选择、实验设定的原因等）
-我们对比了以下技术方案的效果：
 \begin{itemize}
-  \item[$\bullet$] 我们的探索将从BERT架构开始，该架构虽在GPT系列模型的成功下略显式微，但其在生成文本Embedding等领域仍有其独特的架构优势，其模型通常也较为小巧。\verb|nomic-embed-text-v1.5|\cite{nomic}是一款开源的基于长文本BERT架构的文本embedding模型，其在2024年2月发布，以137M的参数量取得了接近SOTA的水平。我们基于该模型输出的影评embedding来训练文本情感分类的逻辑回归模型，将逻辑回归模型在测试集上的效果作为实验结果。
-  \item[$\bullet$] 预训练模型
-  \item[$\bullet$] CARP prompt\cite{CARP}
-  \item[$\bullet$] 微调
+  \item[$\bullet$] 我们的探索将从BERT架构开始，BERT虽在GPT系列模型的成功下略显式微，但其在生成Embedding领域仍有独特的优势。\verb|nomic-embed-text-v1.5|\cite{nomic}为开源BERT长文本嵌入模型，2024年2月面世，参数仅137M而性能逼近SOTA。借此模型生成的embedding，我们训练逻辑回归模型以进行文本情感分类的测试。
+  \item[$\bullet$] 随后，我们将探究在未经任何学习的情况下，当前的预训练大模型能在情感分析任务上达到什么样的水准。目前7B及以下规模的开源大模型中，Qwen2\cite{qwen}系列模型的水平是当之无愧的第一梯队，且包含0.5B、1.5B、7B三个级别的模型可用于对比实验，我们将分别测试它们的zero-shot性能。
+  \item[$\bullet$] 预训练大模型的成功催生了Prompt Engineering这一十分具有潜力的工作范式。通过优化对大模型的指示，能够显著提升大模型在多种任务上的性能。我们选用了情感分析任务上性能SOTA且较为流行的方案CARP Prompt\cite{CARP}，并使用了上下文学习技术（ICL），在prompt中加入了少量样本作为示例，测试prompt工程带来的提升。
+  \item[$\bullet$] 只通过prompt工程，模型的性能很容易就达到了瓶颈。在下游任务上要想获得好的性能，prompt加fine-tuning才是大模型时代的经典范式。我们对数据集进行alpaca格式的指令微调格式改造，采用LoRA微调\cite{hu2021lora},全量微调，以及高质量数据合成等手段，探索最优性能与资源消耗之间的trade-off。
 \end{itemize}
-
-
-
 
 
 
@@ -160,30 +148,75 @@
 
 \section{实验设定}
 % • 实验细节（数据统计信息、模型参数等）
-\subsection{Nomic Embed}
-Nomic Embed模型支持不同大小的
+\subsection{Nomic Embed模型}
+Nomic Embed模型规模较小，仅为137M，相应地它也具有较高效率。其使用了套娃学习（MRL）\cite{matryoshka}的技术方案训练，由此支持不同大小的embedding输出，我们选取了最大的embedding大小用于测试。在获取完embedding后，我们选用了\verb|statsmodels|库中的逻辑回归类\verb|Logit|来完成对embedding的逻辑回归。
+
+\subsection{预训练大语言模型}
+我们对Qwen2-instruct 0.5B, 1.5B, 7B模型进行了测试。Prompt仅用于清晰地定义任务，不携带demo样例，主要用于测试预训练大模型的zero-shot能力，具体在附录中展示。
+
+对于大模型的生成参数，我们经过探索发现默认参数即是最优的，因此最终采纳了默认参数。
+
+我们使用文本匹配来确定大模型的分类结果，取单词positive/negetive的最后一次出现作为分类结果，对于不能确定分类结果的，我们随机确定其分类结果。此后的所有实验中，我们也采用了这样的方案。
+
+\subsection{Prompt Engineering}
+我们采用了CARP Prompt来指导大模型完成任务，引导大模型从影评中找寻情感分类相关线索，并基于线索进行推理，最终给出答案。我们也使用了ICL Prompt，给出了两个基于此步骤的推理样例供大模型参考。由于ICL的性能对所用样例的分布十分敏感，因此我们保证了所用样例正负类平衡。具体使用的Prompt在附录中展示。
+
+由于使用Prompt后，输出中增加了大量思考过程相关内容，大幅增加了生成所需计算量。受算力限制，我们在IMDB数据集十分之一的子集上进行测试。由于IMDB数据集前一半标签为0，后一半标签为1，因此我们取编号尾数为0的样本作为子集，保证了正负类的平衡。
 
 \subsection{微调实验}
 \subsubsection{指令微调数据集构造}
-原imdb数据集'text'-'label'的格式较不适用于预训练大模型的SFT，我们参照经典的alpaca数据集的格式，将其改为严格的指令微调格式，也即intruction-input-output的形式。在指令监督微调时，instruction列对应的内容会与 input 列对应的内容拼接后作为人类指令，而 output列对应的内容作为模型回答。
+原imdb数据集'text'-'label'的格式较不适用于预训练大模型的SFT，我们参照经典的alpaca数据集的格式，将其改为严格的指令微调格式，也即intruction-input-output的形式。在指令监督微调时，instruction列对应的内容会与 input 列对应的内容拼接后作为人类指令，而 output列对应的内容作为模型回答。最后进行随机打乱，尽量保持一个batch内正负样例平衡。
 \subsubsection{LoRA微调参数优化}
-LoRA超参数\(r\)秩的选择，实质上是在模型的复杂度、适应灵活性与潜在的欠拟合或过拟合风险间寻求平衡。依据原始论文\cite{hu2021lora}提供的实践指导，结合初步的预实验分析，我们确定LoRA的秩\(r=8\)及缩放系数\(\alpha=16\)作为实验配置。（预实验qwen2 zero-shot结果表明，对于如IMDB情感分类这类相对简单的任务，由于所需参数更新的维度不高，低秩矩阵的秩可适当减小至8；同时，基于经验，设置\(\alpha\)为\(r\)的2倍为宜,故取32）。此外，将LoRA作用于用于模型的某些层，包括：o\_proj, q\_proj, gate\_proj, down\_proj, up\_proj, k\_proj, 以及 v\_proj。
+LoRA超参数\(r\)秩的选择，实质上是在模型的复杂度、适应灵活性与潜在的欠拟合或过拟合风险间寻求平衡。依据原始论文\cite{hu2021lora}提供的实践指导，结合初步的预实验分析，我们确定LoRA的秩\(r=8\)及缩放系数\(\alpha=16\)作为实验配置。（预实验qwen2 zero-shot结果表明，对于如IMDB情感分类这类相对简单的任务，由于所需参数更新的维度不高，低秩矩阵的秩可适当减小至8；同时，基于经验，设置\(\alpha\)为\(r\)的2倍为宜,故取32）。此外，将LoRA作用于用于模型的某些层，包括：o\_proj, q\_proj, gate\_proj, down\_proj, up\_proj, k\_proj, v\_proj。
 
-我们选用完整的imdb训练集，并按前文方式改造成alpaca格式的指令微调数据集进行LoRA微调实验。采用1e-5的学习率，20step的warm-up，flash-attention2\cite{dao2023flashattention2}加速。可训练参数4.6M，为原模型参数总量的0.29，实验需要单卡A100
+我们选用完整的imdb训练集，并按前文方式改造成alpaca格式的指令微调数据集进行LoRA微调实验。采用5e-5的学习率，batch取8，梯度累积为16，20step warm-up，flash-attention2\cite{dao2023flashattention2}加速。可训练参数4.6M，单卡A100训练40min。微调实验的loss曲线如图\ref{fig:tuning_loss}所示。
 
-\includegraphics[width=0.6\linewidth]{./pic/}
+\begin{figure}[htbp]
+  \centering
+  \subfloat[][LoRA微调实验]
+  {
+    \includegraphics[width=0.45\textwidth]{Final/pic/lora-loss.jpg}
+  }
+  \subfloat[][全量微调实验]
+  {
+    \includegraphics[width=0.45\textwidth]{Final/pic/lora-loss.jpg}
+  }
+  \caption{两种微调实验的loss曲线}
+  \label{fig:tuning_loss}
+\end{figure}
 
 \subsubsection{全量微调}
+全量微调的超参设置基本与LoRA微调实验保持一致，不过学习率设置为了5e-6，避免微调过头造成性能下跌甚至灾难性遗忘。可训练参数1.5B，单卡A100训练2h15min。
 
-\subsection{消融实验}
+\subsection{消融实验：高质量数据过滤}
+IMDB情感分类对大模型而言应该是一个较为容易的任务，但此前实验表明仅仅通过prompt的方式准确率还是不够理想，prompt加fine-tuning成了必选之路。然而，尽可能减少fine-tuning的资源消耗是一个相当至关重要的问题。我们认为完整的IMDB25000条样本有些臃肿冗余，只需要其中部分高质量数据让大模型学会其中任务格式与指令目的即可。故下面进行高质量数据过滤实验，仅使用原数据的0.2进行LoRA微调，就达到了相近的性能(96.15\%)
+
+首先我们对训练集文本长度分布进行测试(图\ref{fig:data_distributed}(a)），过滤长度大于2000的样本。对剩余样本，使用预训练模型获取获取最后输出层logits计算句子的负对数似然(图\ref{fig:data_distributed}(b)），分值越低代表模型对句子自回归预测越容易，可作为衡量样本质量的一个指标(越低越利于模型学习)。出于各语言模型表现的相近性和计算消耗问题，这里采用RoBerta而非qwen2进行负对数似然(NLL)计算，筛选出NLL低于0.1的样本。最后，采用NAACL2024的工作\cite{li2024quantity},计算样本的IFD(指令跟随难度)并进行过滤，最终得到了一个仅有原数据集\textbf{22\%}大小的高质量子集。
+
+在此子集上，我们采用LoRA微调，考虑到高质量数据使得下游任务学习变得更加适应大模型了，我们适当降低的大模型参数更新的低秩(r=4,alpha=8,lr=1e-5),最后获得了与完整数据集LoRA微调相近的性能(acc掉点仅有\textbf{0.45\%}，但训练时间缩减为原来的\textbf{25\%})。可以说取得了准确率性能与训练资源消耗的一个很好的balance。
+
+\begin{figure}[htbp]
+  \centering
+  \subfloat[][文本长度的分布]
+  {
+    \includegraphics[width=0.5\textwidth]{Final/pic/length.png}
+  }
+  \subfloat[][负对数似然(NLL)分数的分布]
+  {
+    \includegraphics[width=0.4\textwidth]{Final/pic/nll.png}
+  }
+  \caption{数据集分布图}
+  \label{fig:data_distributed}
+\end{figure}
 
 \section{实验结果分析与讨论}
 % • 实验结果分析（需要附主要实验结果的图表）
 % • 讨论（实验中遇到的困难和解决方法等）
 
+% 对比各预训练模型
 得到的实验结果如表格\ref{tab:pretrained_results}所示：
 \begin{table}[htbp]
-  \caption{\small{各预训练模型在IMDB数据集上的分类准确率}}
+  \caption{\small{各预训练模型在IMDB数据集上的zero-shot分类准确率}}
   \label{tab:pretrained_results}
   \centering
   \begin{tabular}{cccc}
@@ -201,21 +234,124 @@ LoRA超参数\(r\)秩的选择，实质上是在模型的复杂度、适应灵�
   \end{tabular}
 \end{table}
 
+测试发现Nomic Embed模型取得了与参数量近50倍的Qwen2 7B模型相近的效果，这可能是由于BERT架构在文本理解上的独特优势。对不同规模的Qwen2模型的测试也验证了Scaling Law\cite{scaling}：模型zero-shot性能随着模型规模的大小显著增强。
+
+% 对比Prompt Engineering对1.5B, 7B模型的提升效果（子集）
+在IMDB子集上，基于Qwen2 1.5B与7B模型，对比原版方案与Prompt Engineering方案的准确率，获得结果如表\ref{tab:prompt_results}所示。
+
+\begin{table}[htbp]
+  \caption{\small{各预训练模型使用Prompt Engineering后在IMDB子集上的分类准确率}}
+  \label{tab:prompt_results}
+  \centering
+  \begin{tabular}{cccc}
+    \toprule
+    模型                   & w/o prompt       & w/ prompt \\
+    \midrule
+    \verb|Qwen2-1.5B-Instruct| & $\textbf{0.899}$ & $0.847$   \\
+    \midrule
+    \verb|Qwen2-7B-Instruct| & $\textbf{0.942}$ & $0.939$   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+我们发现，在加上复杂我们设计的复杂prompt之后，1.5B模型有显著的性能下降，而7B模型性能也略微下降。我们猜测，这可能是由于增加的prompt加大了输入文本的复杂度，这可能对规模较小的模型构成了一定挑战，由此模型越小性能下降越大。我们猜测，对于较大的模型，其能起到提升性能的作用。
+
+% 对比各微调方案的效果（子集）
+在IMDB子集上，基于Qwen2 1.5B模型，对比各微调方案准确率，获得结果如表\ref{tab:ft_results}所示。
+
+\begin{table}[htbp]
+  \caption{\small{各预训练模型使用各微调方案后在IMDB数据集（子集）上的分类准确率}}
+  \label{tab:ft_results}
+  \centering
+  \begin{tabular}{ccccc}
+    \toprule
+    模型                    & baseline & LoRA             & 全量微调 & 数据过滤+LoRA \\
+    \midrule
+    \verb|Qwen2-1.5B-Instruct| & $0.899$  & $\textbf{0.966}$ & $0.965$  & $0.962$       \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+微调方案取得了十分显著的效果，获得了近7\%的性能提升，尽管微调所用token量远少于预训练token量。我们推测，微调主要是让模型熟悉任务设定，而非令其学习其中的新知识，因此在极少的训练量以及极少的参数下，其成果能如此显著。同时，我们在微调时观察到了明显的灾难性遗忘现象，在训练过多epoch时，其性能会显著下降，这可能是由于IMDB内所含信息量远不如开放世界知识多，而让大模型过度学习微调数据集而遗忘原有知识会显得得不偿失。
+
+数据过滤方案只使用了25\%的训练时长，22\%的数据集就取得了相近的性能，达到了很好的trade-off。证明原imdb数据集确实对大模型来说略显冗余，我们猜想大模型仅需要适应情感分类数据集的格式即可，其分类能力来自于本身的开放世界知识能力。
+
+% 错误分析、案例分析
+我们对模型输出的错误样例进行了分析。当模型未给出分类结果时，其回答通常是Neutral（中立的），而在经过微调，让模型熟悉任务设定后，这样的回答就几乎不会再出现。
+
+% 最终结果
+最终，我们使用了在前面实验中表现最好的LoRA微调1.5B模型，在完整的IMDB数据集上进行了测试，最终在完整数据集上获得的最优结果为：\textbf{0.955}。
+
 \section{结论}
+\begin{itemize}
+  \item[$\bullet$] Embedding模型Nomic以很小的参数量(137M)取得了不错的性能，与大它50倍的qwen2 7B性能相当
+  \item[$\bullet$] 复杂的prompt对于较小的模型(0.5B,1.5B）性能不增反减，可能是小模型上下文学习能力较弱；故prompt仅需要规定任务格式即可。
+  \item[$\bullet$] prompt+微调带来的提升最大，这应该也是当前进行下游任务学习时的最佳范式
+  \item[$\bullet$] 对于大模型进行简单的情感分类任务学习，完整的IMDB数据集存在冗余，进行高质量数据过滤后仅用原数据的22\%微调就达到了最优性能
+\end{itemize}
 
 
 \section{组员分工}
 % • 组员分工及贡献情况说明
+\begin{itemize}
+  \item[$\bullet$] \textbf{罗浩铭: }
+    \begin{itemize}
+      \item Prompt Engineering (CAPR+ICL)测试
+      \item 模型推理评估代码框架
+      \item 不同scale模型zero-shot和上下文学习能力测试
+    \end{itemize}
+  \item[$\bullet$] \textbf{谢天: }
+    \begin{itemize}
+      \item 指令微调数据集构造
+      \item LoRA微调参数优化实验
+      \item 高质量数据过滤实验(NLL测试，IFD过滤)
+    \end{itemize}
+  \item[$\bullet$] \textbf{韦星光: }
+    \begin{itemize}
+      \item Embedding模型Nomic Embed测试
+      \item 全量微调Qwen2实验
+    \end{itemize}
+\end{itemize}
 
-\section{参考文献}
-
+\newpage
 \bibliographystyle{unsrt}   % unsrt 为文献的格式类型
 \bibliography{nlp_final_report} % nlp_final_report 为我们的.bib文件名
 
 
-
+\newpage
 \appendix
+
 \section{所用Prompt}
+\subsection{指令微调Prompt}
+Carefully examine the movie review provided below and ascertain the overall sentiment expressed in the review. You should classify the sentiment as either positive or negative. Provide your answer solely as a classification without additional text. \\
+Review Sentence:\\
+<Review>\\
+
+\subsection{CAPR格式Prompt}
+This is an overall sentiment classifier for movie reviews.\\
+First, list CLUES (i.e., keywords, phrases, contextual information, semantic relations, semantic meaning, tones, references) that support the sentiment determination of input..\\
+Second, deduce the diagnostic REASONING process from premises (i.e., clues, input) that supports the INPUT sentiment determination (Limit the number of words to 130).\\
+Third, based on clues, reasoning and input, determine the overall SENTIMENT of INPUT as Positive or Negative. You should classify the sentiment as either positive or negative.\\
+
+For example:\\
+INPUT: <Example 1>\\
+CLUES: <Example 1 clues>\\
+REASONING: <Example 1 reasoning>\\
+SENTIMENT: Negative\\
+
+INPUT: <Example 2>\\
+CLUES: <Example 2 clues>\\
+REASONING: <Example 2 reasoning>\\
+SENTIMENT: Positive\\
+
+Please provide your response in the following format:\\
+CLUES: <clues>\\
+REASONING: <reasoning>\\
+SENTIMENT: <sentiment>\\
+
+Now it's your turn. Please analyze the sentiment of the movie review below:\\
+INPUT: \\
+<Review>\\
 
 \end{document}
 
